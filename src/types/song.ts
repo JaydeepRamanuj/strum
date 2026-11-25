@@ -18,6 +18,11 @@ export interface Song {
   /** Shared in Discover (mirrored to `publicSongs/{songId}`). */
   isPublic: boolean;
   /**
+   * The `publicKeys/{dupKey}` claim this song holds while it is public (see `songDupKey`);
+   * null when private. Copied to `publicSongs`.
+   */
+  dupKey: string | null;
+  /**
    * Set only on songs read from `publicSongs` (Discover). Absent on the signed-in user's own
    * library songs, which are always theirs.
    */
@@ -35,5 +40,5 @@ export interface SongOwner {
 /** Fields the client writes when creating a song (the id, timestamps and search keywords are added by the API). */
 export type NewSong = Omit<
   Song,
-  'id' | 'deleted' | 'isPublic' | 'owner' | 'createdAt' | 'searchKeywords'
+  'id' | 'deleted' | 'isPublic' | 'dupKey' | 'owner' | 'createdAt' | 'searchKeywords'
 >;

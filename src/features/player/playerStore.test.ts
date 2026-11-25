@@ -44,6 +44,7 @@ const song = (id: string, durationSec = 200): Song =>
     searchKeywords: [],
     deleted: false,
     isPublic: false,
+    dupKey: null,
     createdAt: null,
   }) as Song;
 

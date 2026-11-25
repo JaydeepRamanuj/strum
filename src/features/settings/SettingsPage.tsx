@@ -3,6 +3,7 @@ import { useAuth } from '@/features/auth/useAuth';
 import { FriendsSection } from '@/features/invites/FriendsSection';
 import { InvitesSection } from '@/features/invites/InvitesSection';
 import { useIsAdmin } from '@/features/invites/useIsAdmin';
+import { DuplicateIndexSection } from './DuplicateIndexSection';
 import { DeletedFilesSection } from './DeletedFilesSection';
 
 export function SettingsPage() {
@@ -18,6 +19,7 @@ export function SettingsPage() {
           <>
             <InvitesSection adminEmail={adminEmail} />
             <FriendsSection adminEmail={adminEmail} />
+            <DuplicateIndexSection />
           </>
         )}
         <DeletedFilesSection />

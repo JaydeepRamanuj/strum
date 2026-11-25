@@ -26,6 +26,7 @@ const song = (id: string, over: Partial<Song> = {}): Song => ({
   searchKeywords: ['title'],
   deleted: false,
   isPublic: false,
+  dupKey: null,
   createdAt: null,
   ...over,
 });

@@ -10,3 +10,11 @@ export class ValidationError extends Error {
 export function friendlyError(err: unknown, fallback: string): string {
   return err instanceof ValidationError ? err.message : fallback;
 }
+
+/** A song can't be made public because the same title and artist is already in Discover. */
+export class DuplicateSongError extends ValidationError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DuplicateSongError';
+  }
+}

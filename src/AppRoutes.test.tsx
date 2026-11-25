@@ -30,7 +30,9 @@ vi.mock('@/features/library/songApi', () => ({
   softDeleteSongs: () => Promise.resolve(),
   restoreSongs: () => Promise.resolve(),
   hardDeleteSongs: () => Promise.resolve(),
-  setSongsPublic: () => Promise.resolve(),
+  setSongsPublic: () => Promise.resolve({ changed: [], duplicates: [] }),
+  adminUpdateSongInfo: () => Promise.resolve(),
+  rebuildDuplicateIndex: () => Promise.resolve({ claimed: 0, failed: 0, duplicates: [] }),
 }));
 
 // Playlists and folders: one fixture each so the playlist and folder routes have real headings.

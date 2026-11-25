@@ -13,7 +13,7 @@ A private music player for a small group of friends. Each user signs in, uploads
 
 Every user's library is **private by default**. The one sharing feature is **public songs**: an owner can make a song public, and then every allowed user can find it in **Discover**, play it, queue it and add it to their own playlists. Only the owner can edit, delete or unshare it. Discover shows the owner's display name (never their email).
 
-Other social features (public playlists, collaborators, likes, comments, friends' activity) are **out of scope**.
+Public playlists are planned (Phase 8, see [phase-8-public-playlists-discover.md](phase-8-public-playlists-discover.md)). Other social features (collaborators, likes, comments, friends' activity) are **out of scope**.
 
 ---
 
@@ -28,6 +28,9 @@ Other social features (public playlists, collaborators, likes, comments, friends
 | [phase-3-player.md](phase-3-player.md) | Audio engine, queue, mini-player, now-playing, lock-screen controls |
 | [phase-4-playlists-folders.md](phase-4-playlists-folders.md) | Playlists, folders, reordering, search |
 | [phase-5-pwa-deploy.md](phase-5-pwa-deploy.md) | PWA install, polish, deployment |
+| [phase-6-duplicates-and-song-editing.md](phase-6-duplicates-and-song-editing.md) | One public copy per song; admins can edit any public song |
+| [phase-7-top-songs.md](phase-7-top-songs.md) | Play counts and the Top songs page |
+| [phase-8-public-playlists-discover.md](phase-8-public-playlists-discover.md) | Public playlists; Discover tabs for playlists and artists |
 
 Phases are sequential; each one ends with a working, testable app.
 
@@ -111,6 +114,7 @@ users/{uid}/songs/{songId}
   searchKeywords: string[]            ← lowercase tokens from title/artist/album
   deleted: boolean                    ← soft delete (see phase 2)
   isPublic?: boolean                  ← shared in Discover (missing = false); see publicSongs
+  dupKey?: string | null              ← the publicKeys claim this song holds while public; null/missing = none
   createdAt: timestamp
 
 publicSongs/{songId}                  ← same id as the owner's private song
@@ -118,7 +122,13 @@ publicSongs/{songId}                  ← same id as the owner's private song
   ownerName: string                   ← owner's display name when shared ("A friend" if none), ≤ 100
   title, artist, album, durationSec, cloudinaryPublicId, audioUrl, format, bytes,
   coverPublicId, coverUrl, searchKeywords, createdAt   ← copied from the private song
+  dupKey: string                      ← normalised title+artist (src/lib/songKey.ts); equals the claim id below
   sharedAt: timestamp                 ← set when made public; Discover sorts by it
+
+publicKeys/{dupKey}                   ← "this song is already public": one doc per title+artist
+  songId: string                      ← the public song that holds it
+  ownerUid: string
+  createdAt: timestamp
 
 users/{uid}/playlists/{playlistId}
   name: string
@@ -139,7 +149,9 @@ users/{uid}/folders/{folderId}
 
 **Public songs (Discover).** Making a song public writes `isPublic: true` on the private song and creates `publicSongs/{songId}` **in one batch**; making it private flips the flag and deletes the copy. The rules only accept a `publicSongs` write when the owner's private song with the same id is public and not deleted after that batch, so the two can't drift apart.
 
-- **Edit** (title, artist, album, cover): the public copy is updated in the same batch.
+- **Only one public copy per song.** `dupKey` is the normalised title and artist (case, accents, punctuation and "feat." credits ignored; with an unknown artist a 5-second duration bucket is added). Making a song public creates `publicKeys/{dupKey}` in the same batch. Creating a document that already exists is refused by the rules, so a second copy can't go public even if two friends try at the same moment. The rules also require every public song's `dupKey` to have a claim that points back at it. Unsharing, soft delete and a title/artist change release or move the claim in the same batch.
+- **Songs shared before this existed** have no `dupKey`. An admin runs **Settings → Duplicate check** once; it claims keys for them and lists copies of each other. Until then, editing or re-sharing such a song also creates its claim.
+- **Edit** (title, artist, album, cover): the public copy is updated in the same batch. An **admin** can edit these fields on anyone's public song: the owner's private song, the public copy and the claim change in one batch (rules: an admin may update `title, artist, album, coverPublicId, coverUrl, searchKeywords, dupKey` only, and only while the song is public).
 - **Soft delete:** the song is also unshared (`isPublic: false`, copy deleted). Restoring does not re-share it.
 - **Hard delete:** the private doc and any leftover copy are deleted together.
 - **Others' playlists** keep the song id. A playlist resolves ids against the user's own library *plus* everyone's public songs, so a song that was deleted or made private simply drops out; the playlist page says "N songs are no longer available" with a **Remove them** button. The same applies to a saved queue.
@@ -177,6 +189,7 @@ strum/
 │  │  ├─ playlists/            ← playlist list/detail/edit, add-to-playlist dialog
 │  │  ├─ folders/              ← folder tree, folder CRUD
 │  │  ├─ discover/             ← public songs: Discover page, publicSongs reader, helpers
+│  │  ├─ settings/             ← deleted files; admin duplicate check
 │  │  └─ search/
 │  ├─ components/              ← shared UI (Button, Modal, Menu, Toast, Cover, …)
 │  ├─ lib/                     ← firestore helpers, formatters, keywords
@@ -218,4 +231,4 @@ Security rules live in `firestore.rules`; publish them by pasting the file into 
 - Lyrics
 - Offline downloads of songs (cache audio in the service worker)
 - Native iOS/Android wrapper via Capacitor
-- Social features beyond public songs (public playlists, likes, comments, activity)
+- Social features beyond public songs and public playlists (likes, comments, activity)

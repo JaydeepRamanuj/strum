@@ -53,18 +53,45 @@ service cloud.firestore {
     }
 
     // Discover: a public copy of a song its owner chose to share (docs/README.md, Data model).
-    // Any friend can read them. Only the owner can write, and only while their own private song
-    // (same id) is public and not deleted after the same batch, so the two stay in step.
+    // Any friend can read them. The owner writes them, and only while their own private song
+    // (same id) is public and not deleted after the same batch, so the two stay in step. Every
+    // copy also holds a claim on its title+artist (publicKeys, below), so a song can be public
+    // only once. An admin may fix a copy's descriptive fields (title, artist, album, cover).
     // Deleting a doc that doesn't exist is allowed, so a soft delete needn't check first.
     match /publicSongs/{songId} {
       allow read: if isFriend();
-      allow create, update: if isFriend()
+      allow create: if isFriend()
         && request.resource.data.ownerUid == request.auth.uid
-        && (resource == null || resource.data.ownerUid == request.auth.uid)
         && validPublicSong(request.resource.data)
+        && claimAfter(songId, request.resource.data.dupKey)
         && ownSongIsPublic(songId);
+      allow update: if isFriend()
+        && validPublicSong(request.resource.data)
+        && claimAfter(songId, request.resource.data.dupKey)
+        && (
+          (resource.data.ownerUid == request.auth.uid
+            && request.resource.data.ownerUid == request.auth.uid
+            && ownSongIsPublic(songId))
+          || (isAdmin()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(adminSongFields())
+            && songIsPublicAfter(resource.data.ownerUid, songId))
+        );
       allow delete: if isFriend()
         && (resource == null || resource.data.ownerUid == request.auth.uid);
+    }
+
+    // One claim per normalised title+artist (the id is the key, see src/lib/songKey.ts). Creating
+    // one fails if it already exists, which is what stops a second copy of a song from going
+    // public, even if two people try at once. A claim must point at the public song that holds it
+    // (same batch). The owner releases it when unsharing; an admin can create or release any.
+    match /publicKeys/{key} {
+      allow read: if isFriend();
+      allow create: if isFriend()
+        && validClaim(key, request.resource.data)
+        && (request.resource.data.ownerUid == request.auth.uid || isAdmin());
+      allow update: if false;
+      allow delete: if isFriend()
+        && (resource == null || resource.data.ownerUid == request.auth.uid || isAdmin());
     }
 
     match /users/{uid} {
@@ -72,7 +99,14 @@ service cloud.firestore {
 
       match /songs/{songId} {
         allow read, delete: if isMe(uid);
-        allow create, update: if isMe(uid) && validSong(request.resource.data);
+        allow create: if isMe(uid) && validSong(request.resource.data);
+        // An admin may fix the descriptive fields of a song that is public (Discover edit).
+        allow update: if (isMe(uid) && validSong(request.resource.data))
+          || (isAdmin()
+            && resource.data.isPublic == true
+            && resource.data.deleted == false
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(adminSongFields())
+            && validSong(request.resource.data));
       }
       match /playlists/{playlistId} {
         allow read, delete: if isMe(uid);
@@ -91,7 +125,12 @@ service cloud.firestore {
         && d.audioUrl is string && d.audioUrl.matches('https://res\\.cloudinary\\.com/.*')
         && d.durationSec is number
         && d.deleted is bool
-        && (!('isPublic' in d) || d.isPublic is bool);
+        && (!('isPublic' in d) || d.isPublic is bool)
+        && (!('dupKey' in d) || d.dupKey == null || (d.dupKey is string && d.dupKey.size() <= 300));
+    }
+    // Fields an admin may change on a public song and its private original.
+    function adminSongFields() {
+      return ['title', 'artist', 'album', 'coverPublicId', 'coverUrl', 'searchKeywords', 'dupKey'];
     }
     function validPublicSong(d) {
       return d.ownerUid is string
@@ -102,11 +141,30 @@ service cloud.firestore {
         && d.audioUrl is string && d.audioUrl.matches('https://res\\.cloudinary\\.com/.*')
         && d.durationSec is number
         && d.searchKeywords is list
+        && d.dupKey is string && d.dupKey.size() > 0 && d.dupKey.size() <= 300
         && d.sharedAt is timestamp;
+    }
+    // The claim on `key` points at this song once the batch is applied.
+    function claimAfter(songId, key) {
+      let claim = /databases/$(database)/documents/publicKeys/$(key);
+      return existsAfter(claim) && getAfter(claim).data.songId == songId;
+    }
+    // A new claim names the public song that holds it, and that song's owner and key match.
+    function validClaim(key, d) {
+      let pub = /databases/$(database)/documents/publicSongs/$(d.songId);
+      return d.songId is string
+        && d.ownerUid is string
+        && d.createdAt is timestamp
+        && existsAfter(pub)
+        && getAfter(pub).data.dupKey == key
+        && getAfter(pub).data.ownerUid == d.ownerUid;
     }
     // The caller's own private song with this id, as it will be after this write/batch.
     function ownSongIsPublic(songId) {
-      let path = /databases/$(database)/documents/users/$(request.auth.uid)/songs/$(songId);
+      return songIsPublicAfter(request.auth.uid, songId);
+    }
+    function songIsPublicAfter(uid, songId) {
+      let path = /databases/$(database)/documents/users/$(uid)/songs/$(songId);
       return existsAfter(path)
         && getAfter(path).data.isPublic == true
         && getAfter(path).data.deleted == false;

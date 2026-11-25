@@ -31,6 +31,7 @@ export function publicSongFields(song: Song, owner: SongOwner): Record<string, u
     coverPublicId: song.coverPublicId,
     coverUrl: song.coverUrl,
     searchKeywords: song.searchKeywords,
+    dupKey: song.dupKey,
     createdAt: song.createdAt ?? null,
   };
 }
@@ -55,6 +56,7 @@ export function toPublicSong(id: string, data: DocumentData): PublicSong {
     searchKeywords: Array.isArray(data.searchKeywords) ? data.searchKeywords : [],
     deleted: false,
     isPublic: true,
+    dupKey: typeof data.dupKey === 'string' ? data.dupKey : null,
     createdAt: data.createdAt ?? null,
     owner: { uid: data.ownerUid, name: data.ownerName || 'A friend' },
     sharedAtMs: typeof sharedAt?.toMillis === 'function' ? sharedAt.toMillis() : 0,

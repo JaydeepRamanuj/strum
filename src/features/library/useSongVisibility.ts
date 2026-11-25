@@ -17,10 +17,21 @@ export function useSongVisibility(): {
     if (!user || songs.length === 0) return false;
     setBusy(true);
     try {
-      await setSongsPublic({ uid: user.uid, name: ownerNameFor(user) }, songs, isPublic);
-      const what = songs.length === 1 ? `“${songs[0].title}”` : `${songs.length} songs`;
-      toast.success(isPublic ? `Shared ${what} in Discover` : `${what} is private again`);
-      return true;
+      const { changed, duplicates } = await setSongsPublic(
+        { uid: user.uid, name: ownerNameFor(user) },
+        songs,
+        isPublic,
+      );
+      if (changed.length > 0) {
+        const what = changed.length === 1 ? `“${changed[0].title}”` : `${changed.length} songs`;
+        toast.success(isPublic ? `Shared ${what} in Discover` : `${what} is private again`);
+      }
+      if (duplicates.length === 1) {
+        toast.error(`Not shared: “${duplicates[0].song.title}”. ${duplicates[0].reason}`);
+      } else if (duplicates.length > 1) {
+        toast.error(`${duplicates.length} songs weren't shared: they're already in Discover.`);
+      }
+      return changed.length > 0;
     } catch {
       toast.error(
         isPublic
