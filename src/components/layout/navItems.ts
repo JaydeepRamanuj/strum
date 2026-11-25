@@ -1,9 +1,11 @@
-import { Compass, House, Library, Search, Upload, type LucideIcon } from 'lucide-react';
+import { Compass, House, Library, Search, TrendingUp, Upload, type LucideIcon } from 'lucide-react';
 
 export interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
+  /** Left out of the mobile tab bar (it only fits five). Reached from Home instead. */
+  desktopOnly?: boolean;
 }
 
 /** Main destinations, shared by the desktop sidebar and mobile tab bar. */
@@ -13,4 +15,5 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/discover', label: 'Discover', icon: Compass },
   { to: '/library', label: 'Library', icon: Library },
   { to: '/upload', label: 'Upload', icon: Upload },
+  { to: '/top', label: 'Top songs', icon: TrendingUp, desktopOnly: true },
 ];

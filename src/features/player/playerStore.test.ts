@@ -26,7 +26,7 @@ vi.mock('@/config/cloudinary', () => ({
   streamUrl: (publicId: string) => `https://stream/${publicId}`,
 }));
 
-import { LIBRARY_SOURCE, usePlayerStore } from './playerStore';
+import { LIBRARY_SOURCE, setPlayCountedHandler, usePlayerStore } from './playerStore';
 
 const song = (id: string, durationSec = 200): Song =>
   ({
@@ -248,5 +248,58 @@ describe('restore', () => {
     expect(store().positionSec).toBe(42);
     expect(engine.load).toHaveBeenLastCalledWith('https://stream/pid/b', 42);
     expect(engine.play).not.toHaveBeenCalled();
+  });
+});
+
+describe('play counting (Top songs)', () => {
+  const counted: string[] = [];
+  beforeEach(() => {
+    counted.length = 0;
+    setPlayCountedHandler((song) => counted.push(song.id));
+  });
+
+  /** Plays the loaded song from `from` to `to` in half-second steps. */
+  const listen = (from: number, to: number) => {
+    for (let t = from; t <= to; t += 0.5) emit({ type: 'time', positionSec: t, durationSec: 200 });
+  };
+
+  it('counts a song once after 30 seconds of listening', () => {
+    store().playList(songs, 0, LIBRARY_SOURCE);
+    listen(0, 25);
+    expect(counted).toEqual([]);
+    listen(25.5, 60);
+    expect(counted).toEqual(['a']);
+  });
+
+  it('does not count a song that was skipped early', () => {
+    store().playList(songs, 0, LIBRARY_SOURCE);
+    listen(0, 10);
+    store().next();
+    listen(0, 10);
+    expect(counted).toEqual([]);
+  });
+
+  it('counts each song in the queue separately', () => {
+    store().playList(songs, 0, LIBRARY_SOURCE);
+    listen(0, 31);
+    store().next();
+    listen(0, 31);
+    expect(counted).toEqual(['a', 'b']);
+  });
+
+  it('counts again when repeat one starts the song over', () => {
+    usePlayerStore.setState({ repeat: 'one' });
+    store().playList(songs, 0, LIBRARY_SOURCE);
+    listen(0, 31);
+    emit({ type: 'ended' });
+    listen(0, 31);
+    expect(counted).toEqual(['a', 'a']);
+  });
+
+  it('counts nothing once the handler is removed', () => {
+    setPlayCountedHandler(null);
+    store().playList(songs, 0, LIBRARY_SOURCE);
+    listen(0, 40);
+    expect(counted).toEqual([]);
   });
 });

@@ -44,6 +44,8 @@ export interface SongRowProps {
   onRemoveFromPlaylist?: () => void;
   /** Shown before the cover, e.g. a drag handle on the playlist page. */
   dragHandle?: ReactNode;
+  /** Position in a ranked list (Top songs), shown before the cover. */
+  rank?: number;
   rowRef?: Ref<HTMLLIElement>;
   rowStyle?: CSSProperties;
 }
@@ -65,6 +67,7 @@ export function SongRow({
   onAddToPlaylist,
   onRemoveFromPlaylist,
   dragHandle,
+  rank,
   rowRef,
   rowStyle,
 }: SongRowProps) {
@@ -135,6 +138,9 @@ export function SongRow({
       )}
     >
       {dragHandle}
+      {rank !== undefined && (
+        <span className="w-6 shrink-0 text-center text-sm text-muted tabular-nums">{rank}</span>
+      )}
 
       {selectMode ? (
         <button

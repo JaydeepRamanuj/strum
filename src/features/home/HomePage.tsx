@@ -1,6 +1,6 @@
-import { House, Pause, Play, Shuffle, Upload } from 'lucide-react';
+import { ChevronRight, House, Pause, Play, Shuffle, TrendingUp, Upload } from 'lucide-react';
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Cover } from '@/components/Cover';
 import { EmptyState } from '@/components/EmptyState';
@@ -112,6 +112,16 @@ export function HomePage() {
             </div>
           </section>
         )}
+
+        {/* Top songs has no tab on mobile (the bar holds five), so Home links to it there. */}
+        <Link to="/top" className="flex items-center gap-3 rounded-xl bg-surface-2 p-3 md:hidden">
+          <TrendingUp className="size-5 text-accent" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium">Top songs</span>
+            <span className="block truncate text-xs text-muted">Your 10 most played</span>
+          </span>
+          <ChevronRight className="size-4 text-muted" aria-hidden />
+        </Link>
 
         <section aria-labelledby="recent-heading">
           <h2

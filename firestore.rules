@@ -112,6 +112,16 @@ service cloud.firestore {
         allow read, delete: if isMe(uid);
         allow create, update: if isMe(uid) && validPlaylist(request.resource.data);
       }
+      // Play counts for Top songs. A play adds exactly 1 to the count; only this user sees them.
+      match /playStats/{songId} {
+        allow read, delete: if isMe(uid);
+        allow create: if isMe(uid)
+          && validPlayStat(request.resource.data)
+          && request.resource.data.count == 1;
+        allow update: if isMe(uid)
+          && validPlayStat(request.resource.data)
+          && request.resource.data.count == resource.data.count + 1;
+      }
       match /folders/{folderId} {
         allow read, delete: if isMe(uid);
         allow create, update: if isMe(uid) && validFolder(request.resource.data);
@@ -172,6 +182,11 @@ service cloud.firestore {
     function validPlaylist(d) {
       return d.name is string && d.name.size() > 0 && d.name.size() <= 100
         && d.songIds is list && d.songIds.size() <= 5000;
+    }
+    function validPlayStat(d) {
+      return d.count is int && d.count >= 1
+        && d.lastPlayedAt is timestamp
+        && d.keys().hasOnly(['count', 'lastPlayedAt']);
     }
     function validFolder(d) {
       return d.name is string && d.name.size() > 0 && d.name.size() <= 100;

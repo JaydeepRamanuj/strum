@@ -138,12 +138,18 @@ users/{uid}/playlists/{playlistId}
   songIds: string[]                   ← ordered
   createdAt, updatedAt: timestamp
 
+users/{uid}/playStats/{songId}        ← Top songs; songId may be a friend's public song
+  count: number                       ← +1 each time the song is listened to for 30 s (or half of a short song)
+  lastPlayedAt: timestamp             ← breaks ties between equal counts
+
 users/{uid}/folders/{folderId}
   name: string
   parentId: string | null             ← allows nested folders
   order: number
   createdAt: timestamp
 ```
+
+**Top songs.** The player counts a play once per song load after 30 seconds of real listening (half the song if it is shorter than a minute); seeking adds nothing. The count is written with `increment(1)` to `users/{uid}/playStats/{songId}`; the rules only allow +1 per write and only for the owner. The Top songs page (`/top`) reads the 25 highest counts, drops songs that were deleted or made private, and shows the first 10. Stats are never shared.
 
 **Hierarchy:** Folder → Playlists → Songs (Spotify-style). A playlist can sit at the root (`folderId: null`) or inside one folder.
 
@@ -190,6 +196,7 @@ strum/
 │  │  ├─ folders/              ← folder tree, folder CRUD
 │  │  ├─ discover/             ← public songs: Discover page, publicSongs reader, helpers
 │  │  ├─ settings/             ← deleted files; admin duplicate check
+│  │  ├─ stats/                ← play counting and the Top songs page
 │  │  └─ search/
 │  ├─ components/              ← shared UI (Button, Modal, Menu, Toast, Cover, …)
 │  ├─ lib/                     ← firestore helpers, formatters, keywords

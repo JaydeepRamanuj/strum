@@ -19,6 +19,16 @@ vi.mock('@/features/discover/publicSongApi', () => ({
   },
 }));
 
+// Top songs: no plays yet, and recording one goes nowhere.
+vi.mock('@/features/stats/playStatsApi', () => ({
+  TOP_FETCH: 25,
+  recordPlay: () => Promise.resolve(),
+  subscribePlayStats: (_uid: string, onNext: (stats: []) => void) => {
+    onNext([]);
+    return () => undefined;
+  },
+}));
+
 // Keeps Firebase out of this test: the library/upload pages read songs through songApi.
 vi.mock('@/features/library/songApi', () => ({
   subscribeSongs: (_uid: string, _deleted: boolean, onNext: (songs: []) => void) => {
@@ -109,6 +119,7 @@ describe('app shell (signed in)', () => {
     ['/upload', 'Upload'],
     ['/search', 'Search'],
     ['/discover', 'Discover'],
+    ['/top', 'Top songs'],
     ['/playlist/p1', 'Road trip'],
     ['/folder/f1', 'Workout'],
     ['/now-playing', 'Nothing playing'],

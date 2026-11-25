@@ -6,6 +6,7 @@ import { PlayerBar } from '@/features/player/PlayerBar';
 import { QueuePanel } from '@/features/player/QueuePanel';
 import { usePlayerKeyboard } from '@/features/player/usePlayerKeyboard';
 import { usePlayerLifecycle } from '@/features/player/usePlayerLifecycle';
+import { usePlayCounting } from '@/features/stats/usePlayCounting';
 import { BottomTabBar } from './BottomTabBar';
 import { Sidebar } from './Sidebar';
 
@@ -16,6 +17,7 @@ import { Sidebar } from './Sidebar';
 export function AppLayout() {
   usePlayerLifecycle();
   usePlayerKeyboard();
+  usePlayCounting();
   return (
     <div className="flex h-dvh">
       {/* min-w-0: without it, long nowrap titles widen the page past the phone screen. */}

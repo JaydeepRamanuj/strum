@@ -11,6 +11,7 @@ import { NowPlayingPage } from '@/features/player/NowPlayingPage';
 import { PlaylistPage } from '@/features/playlists/PlaylistPage';
 import { SearchPage } from '@/features/search/SearchPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
+import { TopSongsPage } from '@/features/stats/TopSongsPage';
 import { UploadPage } from '@/features/upload/UploadPage';
 
 export function AppRoutes() {
@@ -25,6 +26,7 @@ export function AppRoutes() {
           <Route path="upload" element={<UploadPage />} />
           <Route path="search" element={<SearchPage />} />
           <Route path="discover" element={<DiscoverPage />} />
+          <Route path="top" element={<TopSongsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="playlist/:id" element={<PlaylistPage />} />
           <Route path="folder/:id" element={<FolderPage />} />
