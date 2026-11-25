@@ -5,6 +5,7 @@ import { Button } from '@/components/Button';
 import { PageHeader } from '@/components/PageHeader';
 import { getEnv } from '@/config/env';
 import { useAuth } from '@/features/auth/useAuth';
+import { useOnlineStatus } from '@/features/pwa/useOnlineStatus';
 import { useSongs } from '@/features/library/useSongs';
 import { AUDIO_EXTENSIONS } from './validateFile';
 import { UploadReviewRow } from './UploadReviewRow';
@@ -24,6 +25,7 @@ export function UploadPage() {
   const retry = useUploadStore((s) => s.retry);
   const clearFinished = useUploadStore((s) => s.clearFinished);
 
+  const online = useOnlineStatus();
   const { songs: library } = useSongs();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -51,7 +53,7 @@ export function UploadPage() {
   const maxMb = getEnv().maxUploadMb;
 
   const onFiles = (files: FileList | null) => {
-    if (!files || files.length === 0) return;
+    if (!online || !files || files.length === 0) return;
     void addFiles(Array.from(files), maxMb);
   };
 
@@ -92,10 +94,13 @@ export function UploadPage() {
               {AUDIO_EXTENSIONS.join(', ')} · up to {maxMb} MB each
             </p>
           </div>
-          <Button variant="secondary" onClick={() => inputRef.current?.click()}>
+          <Button variant="secondary" onClick={() => inputRef.current?.click()} disabled={!online}>
             <FolderOpen className="size-4" aria-hidden />
             Choose files
           </Button>
+          {!online && (
+            <p className="text-xs text-muted">You're offline. Connect to the internet to upload.</p>
+          )}
           <input
             ref={inputRef}
             type="file"
@@ -141,7 +146,7 @@ export function UploadPage() {
                 )}
                 <Button
                   onClick={() => user && startAll(user.uid)}
-                  disabled={pending === 0 || !user}
+                  disabled={pending === 0 || !user || !online}
                 >
                   {pending === 0
                     ? 'Upload'

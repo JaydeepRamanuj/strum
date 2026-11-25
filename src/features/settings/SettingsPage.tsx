@@ -3,6 +3,7 @@ import { useAuth } from '@/features/auth/useAuth';
 import { FriendsSection } from '@/features/invites/FriendsSection';
 import { InvitesSection } from '@/features/invites/InvitesSection';
 import { useIsAdmin } from '@/features/invites/useIsAdmin';
+import { AccountSection } from './AccountSection';
 import { DuplicateIndexSection } from './DuplicateIndexSection';
 import { DeletedFilesSection } from './DeletedFilesSection';
 
@@ -15,6 +16,7 @@ export function SettingsPage() {
     <>
       <PageHeader title="Settings" />
       <div className="space-y-10 px-4 pb-8 md:px-8">
+        <AccountSection />
         {isAdmin && adminEmail && (
           <>
             <InvitesSection adminEmail={adminEmail} />

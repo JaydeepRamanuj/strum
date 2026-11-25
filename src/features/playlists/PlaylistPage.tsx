@@ -13,7 +13,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { ListMusic, Play, Plus, Shuffle } from 'lucide-react';
+import { Globe, ListMusic, Play, Plus, Shuffle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
@@ -167,6 +167,12 @@ export function PlaylistPage() {
             {playlist.name}
           </h1>
           <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
+            {playlist.isPublic && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-xs">
+                <Globe className="size-3" aria-hidden />
+                Public
+              </span>
+            )}
             <span>
               {songs.length} {songs.length === 1 ? 'song' : 'songs'}
               {songs.length > 0 && ` · ${formatTotalDuration(totalDurationSec(songs))}`}

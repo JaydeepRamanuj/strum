@@ -11,9 +11,9 @@ A private music player for a small group of friends. Each user signs in, uploads
 | **Firebase Hosting** | Serving the built static app (not a server) |
 | **Cloudinary (free)** | Storing and streaming audio files and cover art |
 
-Every user's library is **private by default**. The one sharing feature is **public songs**: an owner can make a song public, and then every allowed user can find it in **Discover**, play it, queue it and add it to their own playlists. Only the owner can edit, delete or unshare it. Discover shows the owner's display name (never their email).
+Every user's library is **private by default**. The sharing features are **public songs** and **public playlists**: an owner can make a song public, and then every allowed user can find it in **Discover**, play it, queue it and add it to their own playlists. A public playlist can hold only public songs. Only the owner can edit, delete or unshare it. Discover shows the owner's display name (never their email).
 
-Public playlists are planned (Phase 8, see [phase-8-public-playlists-discover.md](phase-8-public-playlists-discover.md)). Other social features (collaborators, likes, comments, friends' activity) are **out of scope**.
+Playlists can be made public too (see [phase-8-public-playlists-discover.md](phase-8-public-playlists-discover.md)); Discover lists public songs, playlists and artists. Other social features (collaborators, likes, comments, friends' activity) are **out of scope**.
 
 ---
 
@@ -136,7 +136,19 @@ users/{uid}/playlists/{playlistId}
   coverUrl: string | null             ← custom, else derived from first songs
   folderId: string | null
   songIds: string[]                   ← ordered
+  isPublic?: boolean                  ← shared in Discover (missing = false); see publicPlaylists
   createdAt, updatedAt: timestamp
+
+publicPlaylists/{playlistId}          ← same id as the owner's private playlist
+  ownerUid: string                    ← only this user can write or delete it
+  ownerName: string                   ← owner's display name when shared, ≤ 100
+  name, description, coverUrl, songIds   ← always equal to the private playlist (the rules check this)
+  sharedAt: timestamp                 ← Discover sorts by it
+  updatedAt: timestamp
+
+users/{uid}/playStats/{songId}        ← Top songs; songId may be a friend's public song
+  count: number                       ← +1 each time the song is listened to for 30 s (or half of a short song)
+  lastPlayedAt: timestamp             ← breaks ties between equal counts
 
 users/{uid}/folders/{folderId}
   name: string
@@ -144,6 +156,16 @@ users/{uid}/folders/{folderId}
   order: number
   createdAt: timestamp
 ```
+
+**Public playlists.** Making a playlist public sets `isPublic: true` on the private playlist and creates `publicPlaylists/{id}` **in one batch**; every later change (rename, description, add, remove, reorder) writes both documents in one batch, and the rules refuse a public copy whose name, description or `songIds` differ from the private playlist after the batch. Rules can't check that each song is public, so the app guarantees it:
+
+- **Making it public:** public songs stay. A private song of yours that is already in Discover as another copy (same title and artist, see the duplicate rule above) is **replaced in the playlist** by that public song. Any other private song is made public after you confirm. Ids that no longer resolve (deleted, or made private by a friend) are removed.
+- **Adding songs** to a public playlist goes through the same check and confirmation.
+- **A song in one of your public playlists can't be made private** (the app says which playlist). Soft-deleting a song removes it from your playlists, public ones and their copies included.
+- **Discover** shows a public playlist's songs by looking them up in `publicSongs`, so a friend's song that stopped being public is hidden. A playlist with no public songs left isn't listed. Viewers can play it, queue its songs, or **Save to my playlists** (a private copy that keeps the same song ids).
+- **Artists** in Discover aren't stored: they are grouped in the browser from the public songs' artist tags (split on commas, `;`, `feat.`, `ft.`; not on `&`).
+
+**Top songs.** The player counts a play once per song load after 30 seconds of real listening (half the song if it is shorter than a minute); seeking adds nothing. The count is written with `increment(1)` to `users/{uid}/playStats/{songId}`; the rules only allow +1 per write and only for the owner. The Top songs page (`/top`) reads the 25 highest counts, drops songs that were deleted or made private, and shows the first 10. Stats are never shared.
 
 **Hierarchy:** Folder → Playlists → Songs (Spotify-style). A playlist can sit at the root (`folderId: null`) or inside one folder.
 
@@ -189,7 +211,9 @@ strum/
 │  │  ├─ playlists/            ← playlist list/detail/edit, add-to-playlist dialog
 │  │  ├─ folders/              ← folder tree, folder CRUD
 │  │  ├─ discover/             ← public songs: Discover page, publicSongs reader, helpers
-│  │  ├─ settings/             ← deleted files; admin duplicate check
+│  │  ├─ pwa/                  ← install prompt, update toast, offline banner
+│  │  ├─ settings/             ← account and storage, deleted files; admin duplicate check
+│  │  ├─ stats/                ← play counting and the Top songs page
 │  │  └─ search/
 │  ├─ components/              ← shared UI (Button, Modal, Menu, Toast, Cover, …)
 │  ├─ lib/                     ← firestore helpers, formatters, keywords

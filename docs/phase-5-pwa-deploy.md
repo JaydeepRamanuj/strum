@@ -67,6 +67,14 @@ Update root `README.md` with: local setup, env vars, scripts, how to add friends
 
 ---
 
+## Deviations made while building
+- **No `npm run deploy` and no Firebase CLI.** `AGENTS.md` (owner decision, Phase 1) forbids installing `firebase-tools`, and the app is also set up for Netlify (`public/_redirects`). The root `README.md` explains both ways to deploy; the owner runs the deploy.
+- **Skipped for now** (nothing depends on them): loading skeletons (screens show a spinner), the accessibility pass (icon buttons and sliders already have labels from earlier phases), smaller Cloudinary cover sizes (`w_64`/`w_512`; covers are lazy-loaded and cached for 30 days), a streaming-quality toggle (it stays an env setting, `VITE_STREAM_QUALITY`), and the Cloudinary hardening check (5.6, a console task for the owner).
+- **Not done by the agent, needs a person:** the Lighthouse run, installing on real Android and iPhone devices, and the live deploy and sign-in check (5.4, 5.5).
+- `.env.example` was missing from the repository; it is added.
+
+---
+
 ## After launch (optional future work)
 | Feature | Notes |
 |---|---|

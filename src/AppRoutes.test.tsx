@@ -19,6 +19,24 @@ vi.mock('@/features/discover/publicSongApi', () => ({
   },
 }));
 
+// Public playlists: none, so Firebase stays out of this test.
+vi.mock('@/features/discover/publicPlaylistApi', () => ({
+  subscribePublicPlaylists: (onNext: (playlists: []) => void) => {
+    onNext([]);
+    return () => undefined;
+  },
+}));
+
+// Top songs: no plays yet, and recording one goes nowhere.
+vi.mock('@/features/stats/playStatsApi', () => ({
+  TOP_FETCH: 25,
+  recordPlay: () => Promise.resolve(),
+  subscribePlayStats: (_uid: string, onNext: (stats: []) => void) => {
+    onNext([]);
+    return () => undefined;
+  },
+}));
+
 // Keeps Firebase out of this test: the library/upload pages read songs through songApi.
 vi.mock('@/features/library/songApi', () => ({
   subscribeSongs: (_uid: string, _deleted: boolean, onNext: (songs: []) => void) => {
@@ -46,6 +64,7 @@ vi.mock('@/features/playlists/playlistApi', () => ({
         coverUrl: null,
         folderId: null,
         songIds: [],
+        isPublic: false,
         createdAt: null,
         updatedAt: null,
       },
@@ -61,6 +80,9 @@ vi.mock('@/features/playlists/playlistApi', () => ({
   movePlaylist: () => Promise.resolve(),
   deletePlaylist: () => Promise.resolve(),
   duplicatePlaylist: () => Promise.resolve(''),
+  applyPublishPlan: () => Promise.resolve(),
+  publishPlaylist: () => Promise.resolve(),
+  unpublishPlaylist: () => Promise.resolve(),
 }));
 
 vi.mock('@/features/folders/folderApi', () => ({
@@ -109,20 +131,54 @@ describe('app shell (signed in)', () => {
     ['/upload', 'Upload'],
     ['/search', 'Search'],
     ['/discover', 'Discover'],
+    ['/top', 'Top songs'],
     ['/playlist/p1', 'Road trip'],
     ['/folder/f1', 'Workout'],
     ['/now-playing', 'Nothing playing'],
     ['/nope', 'Page not found'],
-  ])('renders %s', (path, heading) => {
+  ])('renders %s', async (path, heading) => {
     renderAt(path);
-    expect(screen.getByRole('heading', { level: 1, name: heading })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument();
   });
 
-  it('navigates via the main nav', () => {
+  it('switches Discover between songs, playlists and artists', async () => {
+    renderAt('/discover');
+    expect(await screen.findByRole('heading', { name: 'Nothing shared yet' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Playlists' }));
+    expect(screen.getByRole('heading', { name: 'No public playlists yet' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Artists' }));
+    expect(screen.getByRole('heading', { name: 'No artists yet' })).toBeInTheDocument();
+  });
+
+  it('opens the tab named in the address', async () => {
+    renderAt('/discover?tab=artists');
+    expect(await screen.findByRole('tab', { name: 'Artists' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
+  it('says so when a shared playlist or artist is gone', async () => {
+    renderAt('/discover/playlist/nope');
+    expect(
+      await screen.findByRole('heading', { name: "This playlist isn't shared any more" }),
+    ).toBeInTheDocument();
+  });
+
+  it('says so when an artist has no public songs', async () => {
+    renderAt('/discover/artist/nobody');
+    expect(
+      await screen.findByRole('heading', { name: 'No public songs by this artist' }),
+    ).toBeInTheDocument();
+  });
+
+  it('navigates via the main nav', async () => {
     renderAt('/');
     // Sidebar and tab bar both render in jsdom (visibility is CSS-only); use the first.
     fireEvent.click(screen.getAllByRole('link', { name: 'Library' })[0]);
-    expect(screen.getByRole('heading', { level: 1, name: 'Library' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Library' })).toBeInTheDocument();
   });
 
   it('sends a signed-in user away from /login', () => {

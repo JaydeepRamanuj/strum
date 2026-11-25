@@ -1,3 +1,4 @@
+import { Globe } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { PlaylistActionsMenu } from './PlaylistActionsMenu';
 import { PlaylistCover } from './PlaylistCover';
@@ -26,7 +27,10 @@ export function PlaylistCard({ playlist, songs }: PlaylistCardProps) {
           className="w-full"
         />
         <p className="mt-2 truncate text-sm font-medium">{playlist.name}</p>
-        <p className="truncate text-xs text-muted">
+        <p className="flex items-center gap-1 truncate text-xs text-muted">
+          {playlist.isPublic && (
+            <Globe className="size-3 shrink-0" aria-label="Public playlist" role="img" />
+          )}
           {count} {count === 1 ? 'song' : 'songs'}
         </p>
       </NavLink>

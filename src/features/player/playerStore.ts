@@ -7,6 +7,7 @@ import { audioEngine, type EngineEvent } from './audioEngine';
 import { loadVolume, saveVolume, type QueueSnapshot } from './playerPersistence';
 import { initMediaSession, updateMediaSession } from './mediaSession';
 import { moveItem, nextIndex, prevTarget, shuffleAround } from './queueLogic';
+import { createPlayTracker } from '@/features/stats/playTracker';
 
 /** Start prefetching the next song this many seconds before the current one ends. */
 const PRELOAD_BEFORE_END_SEC = 10;
@@ -67,9 +68,19 @@ const currentSong = (s: PlayerState = get()): Song | null => s.queue[s.index] ??
 let consecutiveFailures = 0;
 let prefetchedId: string | null = null;
 
+// Top songs: tells the app when the current song has been listened to long enough to count.
+const playTracker = createPlayTracker();
+let onPlayCounted: ((song: Song) => void) | null = null;
+
+/** Registers the function called once per song play that counts (null removes it). */
+export function setPlayCountedHandler(handler: ((song: Song) => void) | null): void {
+  onPlayCounted = handler;
+}
+
 function loadCurrent(startAt: number, autoplay: boolean): void {
   const song = currentSong();
   if (!song) return;
+  playTracker.reset();
   set({
     positionSec: startAt,
     durationSec: song.durationSec,
@@ -106,6 +117,7 @@ function maybePrefetch(remainingSec: number): void {
 function handleEnded(): void {
   const s = get();
   if (s.repeat === 'one') {
+    playTracker.reset();
     audioEngine.seek(0);
     set({ positionSec: 0 });
     audioEngine.play();
@@ -121,6 +133,14 @@ function handleEnded(): void {
 
 /** A song that can't be played is skipped; stops if every song in the queue fails in a row. */
 function failCurrent(): void {
+  if (!navigator.onLine) {
+    // Skipping through the queue would only fail again: stop and say why.
+    consecutiveFailures = 0;
+    audioEngine.pause();
+    set({ isPlaying: false, isBuffering: false });
+    toast.error("You're offline. Connect to the internet to play songs.");
+    return;
+  }
   const song = currentSong();
   consecutiveFailures++;
   if (song) toast.error(`Couldn't play "${song.title}". Skipping it.`);
@@ -142,6 +162,10 @@ function handleEngineEvent(e: EngineEvent): void {
         positionSec: e.positionSec,
         durationSec: e.durationSec > 0 ? e.durationSec : get().durationSec,
       });
+      if (playTracker.tick(e.positionSec, get().durationSec)) {
+        const song = currentSong();
+        if (song) onPlayCounted?.(song);
+      }
       break;
     case 'playing':
       consecutiveFailures = 0;

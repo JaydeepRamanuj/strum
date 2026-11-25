@@ -9,8 +9,8 @@
 
 ## Rules for contents (owner decisions)
 - A public playlist may hold only public songs.
-- On **Make public**: songs already public are kept; a private song that has a public duplicate owned by someone else (Phase 6) is swapped for that public song, in the public copy only; any other private song prompts "Make N songs public too?" and shares them through the Phase 6 flow.
-- A song in one of your public playlists can't be made private or deleted until it is removed or the playlist is made private ("Make *X* private first").
+- On **Make public**: songs already public are kept; a private song that has a public duplicate (Phase 6) is replaced by that public song **in the playlist** (both copies, so they never differ); any other private song prompts "Make N songs public too?" and shares them through the Phase 6 flow.
+- A song in one of your public playlists can't be made private until it is removed or the playlist is made private ("Make *X* private first"). Deleting a song removes it from every playlist, as before, public ones and their copies included.
 - Adding a private song to a public playlist prompts to make it public. Playlist edits update the public copy.
 
 ## Tasks
@@ -25,3 +25,8 @@ Discover loads the newest 1000 public songs, so artist counts are exact only wit
 - Only the owner can change a public playlist; friends can play and copy it.
 - A public playlist never shows a private song.
 - Artists tab lists every artist with public songs and opens their songs.
+
+## Deviations made while building
+- A swapped song is replaced in the private playlist as well (not only in the public copy), so the two lists are always equal and the rules can check that. The song itself stays in the owner's library.
+- Deleting a song auto-removes it from public playlists (as for private ones) instead of blocking; only "make private" is blocked.
+- Unplayable ids are removed from the playlist when it is made public.

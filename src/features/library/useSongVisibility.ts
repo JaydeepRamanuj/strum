@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { toast } from '@/components/toastStore';
 import { useAuth } from '@/features/auth/useAuth';
 import { ownerNameFor } from '@/features/discover/publicSongs';
+import { friendlyError } from '@/lib/errors';
 import type { Song } from '@/types/song';
 import { setSongsPublic } from './songApi';
 
@@ -32,11 +33,14 @@ export function useSongVisibility(): {
         toast.error(`${duplicates.length} songs weren't shared: they're already in Discover.`);
       }
       return changed.length > 0;
-    } catch {
+    } catch (err) {
       toast.error(
-        isPublic
-          ? "Couldn't share. Check your connection and try again."
-          : "Couldn't make it private. Check your connection and try again.",
+        friendlyError(
+          err,
+          isPublic
+            ? "Couldn't share. Check your connection and try again."
+            : "Couldn't make it private. Check your connection and try again.",
+        ),
       );
       return false;
     } finally {

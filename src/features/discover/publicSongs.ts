@@ -1,7 +1,11 @@
 import type { DocumentData } from 'firebase/firestore';
 import { normalizeText } from '@/lib/keywords';
+import type { PlaySource } from '@/types/player';
 import type { AuthUser } from '@/types/user';
 import type { Song, SongOwner } from '@/types/song';
+
+/** Where Discover songs, playlists and artists start playing from. */
+export const DISCOVER_SOURCE: PlaySource = { type: 'discover', name: 'Discover' };
 
 /** Longest uploader name copied onto a public song (matches `firestore.rules`). */
 export const MAX_OWNER_NAME = 100;

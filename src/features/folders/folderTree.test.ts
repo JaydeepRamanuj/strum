@@ -25,6 +25,7 @@ const playlist = (id: string, name: string, folderId: string | null): Playlist =
   coverUrl: null,
   folderId,
   songIds: [],
+  isPublic: false,
   createdAt: null,
   updatedAt: null,
 });

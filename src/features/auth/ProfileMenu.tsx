@@ -1,7 +1,8 @@
 import clsx from 'clsx';
-import { LogOut, Settings } from 'lucide-react';
+import { Download, LogOut, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Menu } from '@/components/Menu';
+import { useInstallApp } from '@/features/pwa/useInstallApp';
 import { useAuth } from './useAuth';
 import { UserAvatar } from './UserAvatar';
 
@@ -16,6 +17,7 @@ interface ProfileMenuProps {
 export function ProfileMenu({ variant = 'compact', align = 'end', up = false }: ProfileMenuProps) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { canInstall, install } = useInstallApp();
   if (!user) return null;
 
   const name = user.displayName ?? user.email ?? 'You';
@@ -32,6 +34,9 @@ export function ProfileMenu({ variant = 'compact', align = 'end', up = false }: 
       }
       items={[
         { label: 'Settings', icon: <Settings />, onSelect: () => navigate('/settings') },
+        ...(canInstall
+          ? [{ label: 'Install app', icon: <Download />, onSelect: () => void install() }]
+          : []),
         { label: 'Sign out', icon: <LogOut />, onSelect: () => void signOut() },
       ]}
       trigger={({ open, toggle }) => (

@@ -10,6 +10,8 @@ export interface Playlist {
   folderId: string | null;
   /** Ordered. A song appears at most once. */
   songIds: string[];
+  /** Shared in Discover (mirrored to `publicPlaylists/{id}`). Every song in it is public. */
+  isPublic: boolean;
   createdAt: Timestamp | null;
   updatedAt: Timestamp | null;
 }
