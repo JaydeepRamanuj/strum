@@ -19,7 +19,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { publicSongFields } from '@/features/discover/publicSongs';
-import { DuplicateSongError } from '@/lib/errors';
+import { DuplicateSongError, ValidationError } from '@/lib/errors';
 import { buildSearchKeywords } from '@/lib/keywords';
 import { songDupKey } from '@/lib/songKey';
 import type { NewSong, Song, SongOwner } from '@/types/song';
@@ -130,6 +130,27 @@ async function claimHeldByThisSong(key: string, songId: string, uid: string): Pr
   );
 }
 
+/**
+ * A public playlist can only hold public songs, so a song in one of the user's public playlists
+ * can't be made private. Throws a `ValidationError` naming the song and the playlist.
+ */
+async function assertNotInPublicPlaylists(uid: string, songs: Song[]): Promise<void> {
+  if (songs.length === 0) return;
+  const snap = await getDocs(
+    query(collection(db, 'users', uid, 'playlists'), where('isPublic', '==', true)),
+  );
+  for (const playlist of snap.docs) {
+    const ids: unknown = playlist.data().songIds;
+    if (!Array.isArray(ids)) continue;
+    const hit = songs.find((s) => ids.includes(s.id));
+    if (hit) {
+      throw new ValidationError(
+        `“${hit.title}” is in your public playlist “${playlist.data().name}”. Remove it from the playlist or make the playlist private first.`,
+      );
+    }
+  }
+}
+
 function setClaim(batch: WriteBatch, key: string, songId: string, ownerUid: string) {
   batch.set(publicKeyRef(key), { songId, ownerUid, createdAt: serverTimestamp() });
 }
@@ -146,6 +167,7 @@ export async function updateSongInfo(
   patch: SongInfoPatch & { isPublic?: boolean },
 ): Promise<void> {
   const { isPublic = song.isPublic, ...info } = patch;
+  if (song.isPublic && !isPublic) await assertNotInPublicPlaylists(owner.uid, [song]);
   const fields = infoFields(info);
   const dupKey = isPublic ? songDupKey(info.title, info.artist, song.durationSec) : null;
   const next: Song = { ...song, ...fields, isPublic, dupKey };
@@ -222,6 +244,7 @@ export async function setSongsPublic(
   const duplicates: DuplicateSkip[] = [];
 
   if (!isPublic) {
+    await assertNotInPublicPlaylists(owner.uid, todo);
     for (let i = 0; i < todo.length; i += PUBLIC_BATCH_SIZE) {
       const batch = writeBatch(db);
       for (const song of todo.slice(i, i + PUBLIC_BATCH_SIZE)) {
@@ -334,7 +357,8 @@ async function batchApply(ids: string[], apply: (batch: WriteBatch, id: string) 
 }
 
 /**
- * Soft-deletes songs, removes them from every playlist of this user that contains them, and
+ * Soft-deletes songs, removes them from every playlist of this user that contains them (public
+ * playlists and their Discover copies too), and
  * stops sharing them (the Discover copy and duplicate claim are deleted, `isPublic` set to false).
  * Restoring a song does not put it back into playlists or Discover.
  * Other users' playlists keep the id; their playlist page shows it as no longer available.
@@ -351,7 +375,18 @@ export async function softDeleteSongs(uid: string, songIds: string[]): Promise<v
   // Playlist edits first: if this fails, the song stays visible and nothing is half-removed.
   for (const p of playlistRefs) {
     const removed = (p.data().songIds as string[]).filter((id) => songIds.includes(id));
-    await updateDoc(p.ref, { songIds: arrayRemove(...removed), updatedAt: serverTimestamp() });
+    if (p.data().isPublic === true) {
+      // A public playlist's Discover copy loses the songs in the same batch.
+      const batch = writeBatch(db);
+      batch.update(p.ref, { songIds: arrayRemove(...removed), updatedAt: serverTimestamp() });
+      batch.update(doc(db, 'publicPlaylists', p.id), {
+        songIds: arrayRemove(...removed),
+        updatedAt: serverTimestamp(),
+      });
+      await batch.commit();
+    } else {
+      await updateDoc(p.ref, { songIds: arrayRemove(...removed), updatedAt: serverTimestamp() });
+    }
   }
 
   const claims = await claimKeysFor(uid, songIds);

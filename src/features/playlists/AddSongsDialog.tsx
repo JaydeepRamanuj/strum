@@ -1,13 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/Button';
 import { Modal } from '@/components/Modal';
-import { toast } from '@/components/toastStore';
 import { useAuth } from '@/features/auth/useAuth';
 import { filterSongs } from '@/features/library/sortSongs';
-import { friendlyError } from '@/lib/errors';
 import type { Playlist } from '@/types/playlist';
 import type { Song } from '@/types/song';
-import { addSongs } from './playlistApi';
+import { useAddToPlaylist } from './useAddToPlaylist';
 
 interface AddSongsDialogProps {
   playlist: Playlist;
@@ -23,6 +21,7 @@ export function AddSongsDialog({ playlist, library, onClose }: AddSongsDialogPro
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [busy, setBusy] = useState(false);
+  const { addTo, dialog: publishDialog } = useAddToPlaylist();
 
   const inPlaylist = useMemo(() => new Set(playlist.songIds), [playlist.songIds]);
   const candidates = useMemo(
@@ -45,13 +44,13 @@ export function AddSongsDialog({ playlist, library, onClose }: AddSongsDialogPro
   const add = async () => {
     if (!uid || selected.size === 0) return;
     setBusy(true);
+    const ids = [...selected];
     try {
-      const ids = [...selected];
-      await addSongs(uid, playlist.id, ids);
-      toast.success(ids.length === 1 ? 'Added 1 song' : `Added ${ids.length} songs`);
-      onClose();
-    } catch (err) {
-      toast.error(friendlyError(err, "Couldn't add those songs. Try again."));
+      await addTo(playlist, ids, {
+        successMessage: ids.length === 1 ? 'Added 1 song' : `Added ${ids.length} songs`,
+        fallbackError: "Couldn't add those songs. Try again.",
+        onDone: onClose,
+      });
     } finally {
       setBusy(false);
     }
@@ -113,6 +112,7 @@ export function AddSongsDialog({ playlist, library, onClose }: AddSongsDialogPro
           })}
         </ul>
       )}
+      {publishDialog}
     </Modal>
   );
 }

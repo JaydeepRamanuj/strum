@@ -10,6 +10,7 @@ import { friendlyError } from '@/lib/errors';
 import { normalizeText } from '@/lib/keywords';
 import type { Playlist } from '@/types/playlist';
 import { addSongs, createPlaylist } from './playlistApi';
+import { useAddToPlaylist } from './useAddToPlaylist';
 import { usePlaylists } from './usePlaylists';
 
 interface AddToPlaylistDialogProps {
@@ -32,6 +33,7 @@ export function AddToPlaylistDialog({ songIds, onClose }: AddToPlaylistDialogPro
   const [filter, setFilter] = useState('');
   const [newName, setNewName] = useState('');
   const [busy, setBusy] = useState(false);
+  const { addTo: addToPlaylist, dialog: publishDialog } = useAddToPlaylist();
 
   const labels = useMemo(
     () => new Map(flattenFolders(folders).map((r) => [r.folder.id, r.label])),
@@ -52,18 +54,16 @@ export function AddToPlaylistDialog({ songIds, onClose }: AddToPlaylistDialogPro
   const hasAll = (p: Playlist) => songIds.every((id) => p.songIds.includes(id));
 
   const addTo = async (playlist: Playlist) => {
-    if (!uid) return;
     const missing = songIds.filter((id) => !playlist.songIds.includes(id));
     if (missing.length === 0) return;
     setBusy(true);
     try {
-      await addSongs(uid, playlist.id, missing);
-      toast.success(
-        missing.length === 1 ? `Added to “${playlist.name}”` : `Added ${missing.length} songs`,
-      );
-      onClose();
-    } catch (err) {
-      toast.error(friendlyError(err, "Couldn't add to that playlist. Try again."));
+      await addToPlaylist(playlist, missing, {
+        successMessage:
+          missing.length === 1 ? `Added to “${playlist.name}”` : `Added ${missing.length} songs`,
+        fallbackError: "Couldn't add to that playlist. Try again.",
+        onDone: onClose,
+      });
     } finally {
       setBusy(false);
     }
@@ -152,6 +152,7 @@ export function AddToPlaylistDialog({ songIds, onClose }: AddToPlaylistDialogPro
           );
         })}
       </ul>
+      {publishDialog}
     </Modal>
   );
 }

@@ -19,6 +19,14 @@ vi.mock('@/features/discover/publicSongApi', () => ({
   },
 }));
 
+// Public playlists: none, so Firebase stays out of this test.
+vi.mock('@/features/discover/publicPlaylistApi', () => ({
+  subscribePublicPlaylists: (onNext: (playlists: []) => void) => {
+    onNext([]);
+    return () => undefined;
+  },
+}));
+
 // Top songs: no plays yet, and recording one goes nowhere.
 vi.mock('@/features/stats/playStatsApi', () => ({
   TOP_FETCH: 25,
@@ -56,6 +64,7 @@ vi.mock('@/features/playlists/playlistApi', () => ({
         coverUrl: null,
         folderId: null,
         songIds: [],
+        isPublic: false,
         createdAt: null,
         updatedAt: null,
       },
@@ -71,6 +80,9 @@ vi.mock('@/features/playlists/playlistApi', () => ({
   movePlaylist: () => Promise.resolve(),
   deletePlaylist: () => Promise.resolve(),
   duplicatePlaylist: () => Promise.resolve(''),
+  applyPublishPlan: () => Promise.resolve(),
+  publishPlaylist: () => Promise.resolve(),
+  unpublishPlaylist: () => Promise.resolve(),
 }));
 
 vi.mock('@/features/folders/folderApi', () => ({
@@ -127,6 +139,36 @@ describe('app shell (signed in)', () => {
   ])('renders %s', (path, heading) => {
     renderAt(path);
     expect(screen.getByRole('heading', { level: 1, name: heading })).toBeInTheDocument();
+  });
+
+  it('switches Discover between songs, playlists and artists', () => {
+    renderAt('/discover');
+    expect(screen.getByRole('heading', { name: 'Nothing shared yet' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Playlists' }));
+    expect(screen.getByRole('heading', { name: 'No public playlists yet' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Artists' }));
+    expect(screen.getByRole('heading', { name: 'No artists yet' })).toBeInTheDocument();
+  });
+
+  it('opens the tab named in the address', () => {
+    renderAt('/discover?tab=artists');
+    expect(screen.getByRole('tab', { name: 'Artists' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('says so when a shared playlist or artist is gone', () => {
+    renderAt('/discover/playlist/nope');
+    expect(
+      screen.getByRole('heading', { name: "This playlist isn't shared any more" }),
+    ).toBeInTheDocument();
+  });
+
+  it('says so when an artist has no public songs', () => {
+    renderAt('/discover/artist/nobody');
+    expect(
+      screen.getByRole('heading', { name: 'No public songs by this artist' }),
+    ).toBeInTheDocument();
   });
 
   it('navigates via the main nav', () => {

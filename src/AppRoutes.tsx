@@ -3,7 +3,9 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { NotFoundPage } from '@/components/NotFoundPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RequireAuth } from '@/features/auth/RequireAuth';
+import { DiscoverArtistPage } from '@/features/discover/DiscoverArtistPage';
 import { DiscoverPage } from '@/features/discover/DiscoverPage';
+import { DiscoverPlaylistPage } from '@/features/discover/DiscoverPlaylistPage';
 import { FolderPage } from '@/features/folders/FolderPage';
 import { HomePage } from '@/features/home/HomePage';
 import { LibraryPage } from '@/features/library/LibraryPage';
@@ -26,6 +28,8 @@ export function AppRoutes() {
           <Route path="upload" element={<UploadPage />} />
           <Route path="search" element={<SearchPage />} />
           <Route path="discover" element={<DiscoverPage />} />
+          <Route path="discover/playlist/:id" element={<DiscoverPlaylistPage />} />
+          <Route path="discover/artist/:key" element={<DiscoverArtistPage />} />
           <Route path="top" element={<TopSongsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="playlist/:id" element={<PlaylistPage />} />
