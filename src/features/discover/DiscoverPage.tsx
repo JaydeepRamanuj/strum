@@ -7,6 +7,7 @@ import { Spinner } from '@/components/Spinner';
 import { useAuth } from '@/features/auth/useAuth';
 import { SongRow } from '@/features/library/SongRow';
 import { useSongActions } from '@/features/library/useSongActions';
+import { useIsAdmin } from '@/features/invites/useIsAdmin';
 import { useSongVisibility } from '@/features/library/useSongVisibility';
 import { usePlayerStore } from '@/features/player/playerStore';
 import type { PlaySource } from '@/types/player';
@@ -31,7 +32,7 @@ const inputClass =
 
 /**
  * Songs that any Strum user made public. Anyone can play, queue and add them to their own
- * playlists; only the owner can make one private again (editing stays in their Library).
+ * playlists. The owner can edit it or make it private again; an admin can edit anyone's.
  */
 export function DiscoverPage() {
   const { user } = useAuth();
@@ -40,6 +41,7 @@ export function DiscoverPage() {
   const currentId = usePlayerStore((s) => s.queue[s.index]?.id);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const actions = useSongActions();
+  const isAdmin = useIsAdmin() === true;
   const { setPublic } = useSongVisibility();
 
   const [query, setQuery] = useState('');
@@ -151,6 +153,7 @@ export function DiscoverPage() {
                     onPlayNext={() => usePlayerStore.getState().playNext(song)}
                     onAddToQueue={() => usePlayerStore.getState().addToQueue(song)}
                     onAddToPlaylist={() => actions.addToPlaylist([song.id])}
+                    onEdit={mine || isAdmin ? actions.editSong : undefined}
                     onTogglePublic={mine ? () => void setPublic([song], false) : undefined}
                     byline={mine ? 'Shared by you' : `Shared by ${song.owner.name}`}
                   />

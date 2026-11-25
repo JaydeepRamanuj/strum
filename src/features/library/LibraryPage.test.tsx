@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useToastStore } from '@/components/toastStore';
 import { FakeAuthProvider, fakeAuth } from '@/test/fakeAuth';
 import type { Song } from '@/types/song';
 import { LibraryPage } from './LibraryPage';
@@ -22,11 +23,17 @@ const { softDeleteSongs, setSongsPublic, sampleSongs } = vi.hoisted(() => {
       searchKeywords: [],
       deleted: false,
       isPublic: false,
+      dupKey: null,
       createdAt: null,
     }) as Song;
   return {
     softDeleteSongs: vi.fn(() => Promise.resolve()),
-    setSongsPublic: vi.fn(() => Promise.resolve()),
+    setSongsPublic: vi.fn((_owner: unknown, songs: Song[]) =>
+      Promise.resolve({
+        changed: songs,
+        duplicates: [] as { song: Song; reason: string }[],
+      }),
+    ),
     sampleSongs: [make('s1', 'Halo', 'Beyonce'), make('s2', 'Crazy', 'Gnarls Barkley')],
   };
 });
@@ -134,5 +141,23 @@ describe('LibraryPage', () => {
     ];
     expect(songs.map((s) => s.id).sort()).toEqual(['s1', 's2']);
     expect(isPublic).toBe(true);
+  });
+
+  it('says why a song was not shared when it is already in Discover', async () => {
+    setSongsPublic.mockResolvedValueOnce({
+      changed: [],
+      duplicates: [{ song: sampleSongs[0], reason: 'Already in Discover, shared by Rahul.' }],
+    });
+    renderLibrary();
+    fireEvent.click(screen.getByRole('button', { name: 'More options for Halo' }));
+    fireEvent.click(
+      within(screen.getByRole('menu')).getByRole('menuitem', { name: 'Make public' }),
+    );
+
+    await waitFor(() =>
+      expect(useToastStore.getState().toasts.map((t) => t.message)).toContain(
+        'Not shared: “Halo”. Already in Discover, shared by Rahul.',
+      ),
+    );
   });
 });
