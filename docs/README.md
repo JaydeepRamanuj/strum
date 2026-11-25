@@ -211,7 +211,8 @@ strum/
 │  │  ├─ playlists/            ← playlist list/detail/edit, add-to-playlist dialog
 │  │  ├─ folders/              ← folder tree, folder CRUD
 │  │  ├─ discover/             ← public songs: Discover page, publicSongs reader, helpers
-│  │  ├─ settings/             ← deleted files; admin duplicate check
+│  │  ├─ pwa/                  ← install prompt, update toast, offline banner
+│  │  ├─ settings/             ← account and storage, deleted files; admin duplicate check
 │  │  ├─ stats/                ← play counting and the Top songs page
 │  │  └─ search/
 │  ├─ components/              ← shared UI (Button, Modal, Menu, Toast, Cover, …)

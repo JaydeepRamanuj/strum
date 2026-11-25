@@ -303,3 +303,27 @@ describe('play counting (Top songs)', () => {
     expect(counted).toEqual([]);
   });
 });
+
+describe('playing while offline', () => {
+  it('stops with an offline message instead of skipping through the queue', () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    store().playList(songs, 0, LIBRARY_SOURCE);
+    emit({ type: 'error' });
+
+    expect(currentId()).toBe('a'); // did not skip ahead
+    expect(store().isPlaying).toBe(false);
+    expect(engine.pause).toHaveBeenCalled();
+    expect(useToastStore.getState().toasts.map((t) => t.message)).toContain(
+      "You're offline. Connect to the internet to play songs.",
+    );
+    vi.restoreAllMocks();
+  });
+
+  it('still skips an unplayable song when online', () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
+    store().playList(songs, 0, LIBRARY_SOURCE);
+    emit({ type: 'error' });
+    expect(currentId()).toBe('b');
+    vi.restoreAllMocks();
+  });
+});

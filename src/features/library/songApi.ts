@@ -332,18 +332,20 @@ export async function rebuildDuplicateIndex(
   return { claimed, failed, duplicates };
 }
 
-/** The claims this user holds for these songs, as songId → key (to release them on delete). */
+/**
+ * The claims this user holds for these songs, as songId → key (to release them on delete).
+ * Queries by `songId` alone (a single-field index, no composite index needed) and keeps the
+ * user's own claims.
+ */
 async function claimKeysFor(uid: string, songIds: string[]): Promise<Map<string, string>> {
   const keys = new Map<string, string>();
   for (let i = 0; i < songIds.length; i += 30) {
     const snap = await getDocs(
-      query(
-        publicKeysRef(),
-        where('ownerUid', '==', uid),
-        where('songId', 'in', songIds.slice(i, i + 30)),
-      ),
+      query(publicKeysRef(), where('songId', 'in', songIds.slice(i, i + 30))),
     );
-    snap.forEach((d) => keys.set(String(d.data().songId), d.id));
+    snap.forEach((d) => {
+      if (d.data().ownerUid === uid) keys.set(String(d.data().songId), d.id);
+    });
   }
   return keys;
 }

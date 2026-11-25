@@ -133,6 +133,14 @@ function handleEnded(): void {
 
 /** A song that can't be played is skipped; stops if every song in the queue fails in a row. */
 function failCurrent(): void {
+  if (!navigator.onLine) {
+    // Skipping through the queue would only fail again: stop and say why.
+    consecutiveFailures = 0;
+    audioEngine.pause();
+    set({ isPlaying: false, isBuffering: false });
+    toast.error("You're offline. Connect to the internet to play songs.");
+    return;
+  }
   const song = currentSong();
   consecutiveFailures++;
   if (song) toast.error(`Couldn't play "${song.title}". Skipping it.`);
