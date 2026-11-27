@@ -29,8 +29,8 @@ show that the app is offline and offer to play the downloaded songs.
    - Song menu (every song list): **Download** / **Downloading…** / **Remove download**; a small
      downloaded icon (or progress ring) after the title.
    - Playlist menu: **Download**. Library select mode: **Download** for the selected songs.
-   - **Downloads** page (`/downloads`): play all, shuffle, remove all, storage used, progress. In the
-     desktop sidebar; on phones linked from Home (the tab bar is full).
+   - **Downloads** view in Library (`/library?view=downloads`; `/downloads` redirects there): play
+     all, shuffle, remove all, storage used, progress. Home links to it only while offline.
    - Offline: **Offline** badge next to the logo (mobile header and sidebar); banner links to
      Downloads; a toast "You're offline. Listen to your N downloaded songs?" with **Listen** once per
      offline spell (skipped if a downloaded song is already playing).
@@ -41,6 +41,12 @@ show that the app is offline and offer to play the downloaded songs.
 - A downloaded song plays with the network off, including after closing and reopening the app.
 - Going offline shows the Offline badge and the prompt; **Listen** plays the downloads.
 - Removing a download frees its storage; another account on the same device doesn't see it.
+
+## Deviations made after building
+- Owner request (2026-11-27): Upload and Downloads have no nav tab. **Upload** is a button in Library's
+  header (with the in-progress badge; the badge also shows on the Library tab). Downloads is a third
+  Library view (Songs · Playlists · Downloads). Home shows a Downloads card only while offline. The
+  mobile tab bar now holds four tabs: Home, Search, Discover, Library.
 
 ## Known limits
 - iOS Safari may evict website storage after weeks without use, and caps storage per site; the

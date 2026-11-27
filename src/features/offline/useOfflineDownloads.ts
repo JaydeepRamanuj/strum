@@ -44,7 +44,7 @@ export function useOfflineDownloads(): void {
         label: 'Listen',
         onClick: () => {
           playDownloads();
-          navigate('/downloads');
+          navigate('/library?view=downloads');
         },
       },
       PROMPT_MS,

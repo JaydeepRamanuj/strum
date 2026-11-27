@@ -64,7 +64,8 @@ ready. Reload"*. Nothing reloads by itself, so music doesn't cut out.
 
 Offline, the app opens and your library and playlists are visible (Firestore keeps a local copy). Only
 **downloaded** songs play offline: use **Download** in a song's menu, a playlist's menu, or Library's select
-mode, and find them under **Downloads** (sidebar, or Home on a phone). When the connection drops, an
+mode, and find them under **Library → Downloads** (Home also links there while offline). Uploading is
+under **Library → Upload**. When the connection drops, an
 **Offline** badge shows and Strum offers to play your downloads. Downloads live in the browser's storage on
 that device only (per account); streamed songs are still not cached. Uploads are paused offline. Cover art
 is cached for 30 days.

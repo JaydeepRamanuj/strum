@@ -3,15 +3,17 @@ import { NavLink } from 'react-router-dom';
 import { UploadBadge } from '@/features/upload/UploadBadge';
 import { NAV_ITEMS } from './navItems';
 
-/** Mobile (<md) bottom tab bar. */
+const MOBILE_ITEMS = NAV_ITEMS.filter((item) => !item.desktopOnly);
+
+/** Mobile (<md) bottom tab bar. Uploads in progress show on Library, where Upload lives. */
 export function BottomTabBar() {
   return (
     <nav
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      <ul className="grid h-tabbar grid-cols-5">
-        {NAV_ITEMS.filter((item) => !item.desktopOnly).map(({ to, label, icon: Icon }) => (
+      <ul className="grid h-tabbar grid-cols-4">
+        {MOBILE_ITEMS.map(({ to, label, icon: Icon }) => (
           <li key={to}>
             <NavLink
               to={to}
@@ -25,7 +27,7 @@ export function BottomTabBar() {
             >
               <span className="relative">
                 <Icon className="size-5" aria-hidden />
-                {to === '/upload' && (
+                {to === '/library' && (
                   <UploadBadge className="absolute -top-1.5 -right-3 size-5 min-w-0 px-0 text-[10px]" />
                 )}
               </span>

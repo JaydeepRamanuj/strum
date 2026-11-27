@@ -22,6 +22,7 @@ import { usePlaylists } from '@/features/playlists/usePlaylists';
 import { useSongActions } from '@/features/library/useSongActions';
 import { usePlayableSongs } from '@/features/discover/usePublicSongs';
 import { useSongs } from '@/features/library/useSongs';
+import { useOnlineStatus } from '@/features/pwa/useOnlineStatus';
 import type { Playlist } from '@/types/playlist';
 
 const RECENT_COUNT = 12;
@@ -31,6 +32,7 @@ const updatedMillis = (p: Playlist) => p.updatedAt?.toMillis() ?? 0;
 
 export function HomePage() {
   const navigate = useNavigate();
+  const online = useOnlineStatus();
   const { songs: library, loading: songsLoading } = useSongs();
   // Playlist cards may show friends' public songs too.
   const { songs: playable } = usePlayableSongs();
@@ -122,21 +124,28 @@ export function HomePage() {
           </section>
         )}
 
-        {/* Top songs and Downloads have no tab on mobile (the bar holds five), so Home links to them. */}
-        <div className="space-y-2 md:hidden">
-          <Link to="/top" className="flex items-center gap-3 rounded-xl bg-surface-2 p-3">
+        {/* Downloads matter only offline (they're always in Library); Top songs has no mobile tab. */}
+        <div className={online ? 'space-y-2 md:hidden' : 'space-y-2'}>
+          {!online && (
+            <Link
+              to="/library?view=downloads"
+              className="flex items-center gap-3 rounded-xl bg-surface-2 p-3"
+            >
+              <Download className="size-5 text-accent" aria-hidden />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-medium">Downloads</span>
+                <span className="block truncate text-xs text-muted">
+                  You're offline. These songs still play.
+                </span>
+              </span>
+              <ChevronRight className="size-4 text-muted" aria-hidden />
+            </Link>
+          )}
+          <Link to="/top" className="flex items-center gap-3 rounded-xl bg-surface-2 p-3 md:hidden">
             <TrendingUp className="size-5 text-accent" aria-hidden />
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-medium">Top songs</span>
               <span className="block truncate text-xs text-muted">Your 10 most played</span>
-            </span>
-            <ChevronRight className="size-4 text-muted" aria-hidden />
-          </Link>
-          <Link to="/downloads" className="flex items-center gap-3 rounded-xl bg-surface-2 p-3">
-            <Download className="size-5 text-accent" aria-hidden />
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-medium">Downloads</span>
-              <span className="block truncate text-xs text-muted">Songs that play offline</span>
             </span>
             <ChevronRight className="size-4 text-muted" aria-hidden />
           </Link>

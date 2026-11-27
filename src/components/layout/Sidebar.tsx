@@ -33,7 +33,7 @@ export function Sidebar() {
               >
                 <Icon className="size-5" aria-hidden />
                 {label}
-                {to === '/upload' && <UploadBadge className="ml-auto" />}
+                {to === '/library' && <UploadBadge className="ml-auto" />}
               </NavLink>
             </li>
           ))}

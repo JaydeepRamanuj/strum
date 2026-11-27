@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { NotFoundPage } from '@/components/NotFoundPage';
 import { Spinner } from '@/components/Spinner';
@@ -22,7 +22,6 @@ const DiscoverPlaylistPage = named(
   () => import('@/features/discover/DiscoverPlaylistPage'),
   'DiscoverPlaylistPage',
 );
-const DownloadsPage = named(() => import('@/features/offline/DownloadsPage'), 'DownloadsPage');
 const FolderPage = named(() => import('@/features/folders/FolderPage'), 'FolderPage');
 const LibraryPage = named(() => import('@/features/library/LibraryPage'), 'LibraryPage');
 const NowPlayingPage = named(() => import('@/features/player/NowPlayingPage'), 'NowPlayingPage');
@@ -60,7 +59,7 @@ export function AppRoutes() {
           <Route path="discover/playlist/:id" element={<DiscoverPlaylistPage />} />
           <Route path="discover/artist/:key" element={<DiscoverArtistPage />} />
           <Route path="top" element={<TopSongsPage />} />
-          <Route path="downloads" element={<DownloadsPage />} />
+          <Route path="downloads" element={<Navigate to="/library?view=downloads" replace />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="playlist/:id" element={<PlaylistPage />} />
           <Route path="folder/:id" element={<FolderPage />} />

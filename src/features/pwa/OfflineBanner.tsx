@@ -17,7 +17,7 @@ export function OfflineBanner() {
       {downloads > 0 ? (
         <span>
           You're offline. Only downloaded songs can play.{' '}
-          <Link to="/downloads" className="font-semibold text-accent hover:underline">
+          <Link to="/library?view=downloads" className="font-semibold text-accent hover:underline">
             Play downloads
           </Link>
         </span>

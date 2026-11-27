@@ -54,7 +54,7 @@ VITE_STREAM_QUALITY=128k       # optional: 128k | original
 ### 0.6 App shell
 - `App.tsx` with React Router and a layout:
   - Desktop: left sidebar (Home, Library, Search, Upload, folders/playlists tree placeholder), main content, bottom player bar.
-  - Mobile (<768px): bottom tab bar (Home, Search, Library, Upload) + mini-player above it.
+  - Mobile (<768px): bottom tab bar (Home, Search, Library, Upload; since Phase 9: Home, Search, Discover, Library, with Upload inside Library) + mini-player above it.
 - Placeholder pages for every route:
   ```
   /login

@@ -181,6 +181,24 @@ describe('app shell (signed in)', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Library' })).toBeInTheDocument();
   });
 
+  it('opens Upload and Downloads from Library, with no tab of their own', async () => {
+    renderAt('/library');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Library' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Upload' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Downloads' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Downloads' }));
+    expect(screen.getByRole('heading', { name: 'No downloads yet' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Upload' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Upload' })).toBeInTheDocument();
+  });
+
+  it('sends the old /downloads address to the Library view', async () => {
+    renderAt('/downloads');
+    expect(await screen.findByRole('heading', { name: 'No downloads yet' })).toBeInTheDocument();
+  });
+
   it('sends a signed-in user away from /login', () => {
     renderAt('/login');
     expect(screen.getByRole('heading', { level: 1, name: 'Home' })).toBeInTheDocument();

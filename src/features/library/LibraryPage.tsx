@@ -17,8 +17,10 @@ import { Select } from '@/components/Select';
 import { PageHeader } from '@/components/PageHeader';
 import { Spinner } from '@/components/Spinner';
 import { FolderContents } from '@/features/folders/FolderContents';
+import { DownloadsList } from '@/features/offline/DownloadsList';
 import { useDownloadsStore } from '@/features/offline/downloadsStore';
 import { LIBRARY_SOURCE, usePlayerStore } from '@/features/player/playerStore';
+import { UploadBadge } from '@/features/upload/UploadBadge';
 import { useSongActions } from './useSongActions';
 import { useDeleteSongs } from './useDeleteSongs';
 import { useSongVisibility } from './useSongVisibility';
@@ -29,7 +31,15 @@ import { useSongs } from './useSongs';
 const inputClass =
   'h-10 rounded-full border border-border bg-surface-2 text-sm outline-none focus:border-accent';
 
-type LibraryView = 'songs' | 'playlists';
+type LibraryView = 'songs' | 'playlists' | 'downloads';
+
+const VIEW_LABELS: Record<LibraryView, string> = {
+  songs: 'Songs',
+  playlists: 'Playlists',
+  downloads: 'Downloads',
+};
+
+const isView = (v: string | null): v is LibraryView => v === 'playlists' || v === 'downloads';
 
 export function LibraryPage() {
   const { songs, loading, error } = useSongs();
@@ -39,7 +49,8 @@ export function LibraryPage() {
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const view: LibraryView = params.get('view') === 'playlists' ? 'playlists' : 'songs';
+  const viewParam = params.get('view');
+  const view: LibraryView = isView(viewParam) ? viewParam : 'songs';
 
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SongSort>('recent');
@@ -53,7 +64,7 @@ export function LibraryPage() {
   const visible = useMemo(() => sortSongs(filterSongs(songs, query), sort), [songs, query, sort]);
 
   const switchView = (next: LibraryView) => {
-    setParams(next === 'playlists' ? { view: 'playlists' } : {}, { replace: true });
+    setParams(next === 'songs' ? {} : { view: next }, { replace: true });
     exitSelectMode();
   };
 
@@ -93,18 +104,30 @@ export function LibraryPage() {
     <>
       <PageHeader
         title="Library"
-        subtitle={view === 'songs' ? subtitle : 'Playlists and folders'}
+        subtitle={
+          view === 'songs'
+            ? subtitle
+            : view === 'playlists'
+              ? 'Playlists and folders'
+              : 'Saved on this device'
+        }
         actions={
-          view === 'songs' &&
-          songs.length > 0 && (
-            <Button
-              variant="secondary"
-              onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
-            >
-              {selectMode ? <X className="size-4" /> : <CheckSquare className="size-4" />}
-              {selectMode ? 'Cancel' : 'Select'}
+          <div className="flex shrink-0 gap-2">
+            <Button variant="secondary" onClick={() => navigate('/upload')}>
+              <Upload className="size-4" aria-hidden />
+              Upload
+              <UploadBadge />
             </Button>
-          )
+            {view === 'songs' && songs.length > 0 && (
+              <Button
+                variant="secondary"
+                onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+              >
+                {selectMode ? <X className="size-4" /> : <CheckSquare className="size-4" />}
+                {selectMode ? 'Cancel' : 'Select'}
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -114,23 +137,25 @@ export function LibraryPage() {
           aria-label="Library view"
           className="inline-flex rounded-full bg-surface-2 p-1"
         >
-          {(['songs', 'playlists'] as const).map((key) => (
+          {(Object.keys(VIEW_LABELS) as LibraryView[]).map((key) => (
             <button
               key={key}
               type="button"
               aria-pressed={view === key}
               onClick={() => switchView(key)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors sm:px-4 ${
                 view === key ? 'bg-surface text-fg shadow' : 'text-muted hover:text-fg'
               }`}
             >
-              {key === 'songs' ? 'Songs' : 'Playlists'}
+              {VIEW_LABELS[key]}
             </button>
           ))}
         </div>
       </div>
 
       {view === 'playlists' && <FolderContents folderId={null} />}
+
+      {view === 'downloads' && <DownloadsList />}
 
       {view === 'songs' && loading && (
         <div className="flex justify-center py-16">
