@@ -1,5 +1,15 @@
-import { CheckSquare, Globe, Library, ListPlus, Lock, Search, Upload, X } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import {
+  CheckSquare,
+  Download,
+  Globe,
+  Library,
+  ListPlus,
+  Lock,
+  Search,
+  Upload,
+  X,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
@@ -7,6 +17,7 @@ import { Select } from '@/components/Select';
 import { PageHeader } from '@/components/PageHeader';
 import { Spinner } from '@/components/Spinner';
 import { FolderContents } from '@/features/folders/FolderContents';
+import { useDownloadsStore } from '@/features/offline/downloadsStore';
 import { LIBRARY_SOURCE, usePlayerStore } from '@/features/player/playerStore';
 import { useSongActions } from './useSongActions';
 import { useDeleteSongs } from './useDeleteSongs';
@@ -22,6 +33,8 @@ type LibraryView = 'songs' | 'playlists';
 
 export function LibraryPage() {
   const { songs, loading, error } = useSongs();
+  // Keeps downloaded copies' titles and covers in step with edits.
+  useEffect(() => useDownloadsStore.getState().refreshInfo(songs), [songs]);
   const currentId = usePlayerStore((s) => s.queue[s.index]?.id);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const navigate = useNavigate();
@@ -188,6 +201,19 @@ export function LibraryPage() {
                 >
                   <ListPlus className="size-4" aria-hidden />
                   Add to playlist
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    void useDownloadsStore
+                      .getState()
+                      .download(songs.filter((s) => selected.has(s.id)));
+                    exitSelectMode();
+                  }}
+                  disabled={selected.size === 0 || busy}
+                >
+                  <Download className="size-4" aria-hidden />
+                  Download
                 </Button>
                 <Button
                   variant="secondary"

@@ -22,6 +22,14 @@ vi.mock('./audioEngine', () => {
   return { audioEngine: engine };
 });
 
+const offline = vi.hoisted(() => ({ downloaded: new Set<string>() }));
+
+vi.mock('@/features/offline/downloadsStore', () => ({
+  isDownloaded: (id: string) => offline.downloaded.has(id),
+  offlineAudioUrl: (id: string) =>
+    Promise.resolve(offline.downloaded.has(id) ? `blob:offline/${id}` : null),
+}));
+
 vi.mock('@/config/cloudinary', () => ({
   streamUrl: (publicId: string) => `https://stream/${publicId}`,
 }));
@@ -56,6 +64,8 @@ const currentId = () => store().queue[store().index]?.id;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  offline.downloaded.clear();
+  URL.revokeObjectURL = vi.fn();
   usePlayerStore.setState({
     queue: [],
     originalQueue: [],
@@ -305,17 +315,38 @@ describe('play counting (Top songs)', () => {
 });
 
 describe('playing while offline', () => {
-  it('stops with an offline message instead of skipping through the queue', () => {
+  it('stops with an offline message when nothing is downloaded', () => {
     vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     store().playList(songs, 0, LIBRARY_SOURCE);
-    emit({ type: 'error' });
 
     expect(currentId()).toBe('a'); // did not skip ahead
     expect(store().isPlaying).toBe(false);
+    expect(engine.load).not.toHaveBeenCalled();
     expect(engine.pause).toHaveBeenCalled();
     expect(useToastStore.getState().toasts.map((t) => t.message)).toContain(
-      "You're offline. Connect to the internet to play songs.",
+      "You're offline. Download songs while you're online to listen without a connection.",
     );
+    vi.restoreAllMocks();
+  });
+
+  it('skips to the next downloaded song', async () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    offline.downloaded.add('c');
+    store().playList(songs, 0, LIBRARY_SOURCE);
+    expect(currentId()).toBe('c');
+    await vi.waitFor(() => expect(engine.load).toHaveBeenCalledWith('blob:offline/c', 0));
+    expect(engine.play).toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
+  it('moves on to a downloaded song when streaming fails offline', async () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(true);
+    offline.downloaded.add('d');
+    store().playList(songs, 0, LIBRARY_SOURCE);
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    emit({ type: 'error' });
+    expect(currentId()).toBe('d');
+    await vi.waitFor(() => expect(engine.load).toHaveBeenLastCalledWith('blob:offline/d', 0));
     vi.restoreAllMocks();
   });
 
@@ -325,5 +356,24 @@ describe('playing while offline', () => {
     emit({ type: 'error' });
     expect(currentId()).toBe('b');
     vi.restoreAllMocks();
+  });
+});
+
+describe('downloaded songs', () => {
+  it('plays the copy on this device instead of streaming, even online', async () => {
+    offline.downloaded.add('b');
+    store().playList(songs, 1, LIBRARY_SOURCE);
+    await vi.waitFor(() => expect(engine.load).toHaveBeenCalledWith('blob:offline/b', 0));
+    expect(engine.load).not.toHaveBeenCalledWith('https://stream/pid/b', 0);
+  });
+
+  it('a slow offline read does not load over a newer song', async () => {
+    offline.downloaded.add('a');
+    store().playList(songs, 0, LIBRARY_SOURCE);
+    store().next(); // b streams right away
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(engine.load).toHaveBeenLastCalledWith('https://stream/pid/b', 0);
+    expect(engine.load).not.toHaveBeenCalledWith('blob:offline/a', 0);
   });
 });

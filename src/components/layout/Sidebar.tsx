@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import { AudioLines } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { ProfileMenu } from '@/features/auth/ProfileMenu';
+import { OfflineBadge } from '@/features/offline/OfflineBadge';
 import { SidebarPlaylists } from '@/features/playlists/SidebarPlaylists';
 import { UploadBadge } from '@/features/upload/UploadBadge';
 import { NAV_ITEMS } from './navItems';
@@ -13,6 +14,7 @@ export function Sidebar() {
       <div className="flex items-center gap-2 px-3 py-3 text-lg font-bold">
         <AudioLines className="size-6 text-accent" aria-hidden />
         Strum
+        <OfflineBadge className="ml-auto" />
       </div>
 
       <nav aria-label="Main">

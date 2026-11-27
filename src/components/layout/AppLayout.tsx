@@ -8,6 +8,8 @@ import { PlayerBar } from '@/features/player/PlayerBar';
 import { QueuePanel } from '@/features/player/QueuePanel';
 import { usePlayerKeyboard } from '@/features/player/usePlayerKeyboard';
 import { usePlayerLifecycle } from '@/features/player/usePlayerLifecycle';
+import { OfflineBadge } from '@/features/offline/OfflineBadge';
+import { useOfflineDownloads } from '@/features/offline/useOfflineDownloads';
 import { OfflineBanner } from '@/features/pwa/OfflineBanner';
 import { useIosInstallHint } from '@/features/pwa/useInstallApp';
 import { usePlayCounting } from '@/features/stats/usePlayCounting';
@@ -23,6 +25,7 @@ export function AppLayout() {
   usePlayerKeyboard();
   usePlayCounting();
   useIosInstallHint();
+  useOfflineDownloads();
   return (
     <div className="flex h-dvh">
       {/* min-w-0: without it, long nowrap titles widen the page past the phone screen. */}
@@ -33,6 +36,7 @@ export function AppLayout() {
             <span className="flex h-12 items-center gap-2 font-bold">
               <AudioLines className="size-5 text-accent" aria-hidden />
               Strum
+              <OfflineBadge />
             </span>
             <ProfileMenu />
           </header>

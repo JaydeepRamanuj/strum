@@ -31,6 +31,7 @@ Playlists can be made public too (see [phase-8-public-playlists-discover.md](pha
 | [phase-6-duplicates-and-song-editing.md](phase-6-duplicates-and-song-editing.md) | One public copy per song; admins can edit any public song |
 | [phase-7-top-songs.md](phase-7-top-songs.md) | Play counts and the Top songs page |
 | [phase-8-public-playlists-discover.md](phase-8-public-playlists-discover.md) | Public playlists; Discover tabs for playlists and artists |
+| [phase-9-offline-downloads.md](phase-9-offline-downloads.md) | Download songs to the device and play them offline |
 
 Phases are sequential; each one ends with a working, testable app.
 
@@ -212,6 +213,7 @@ strum/
 │  │  ├─ folders/              ← folder tree, folder CRUD
 │  │  ├─ discover/             ← public songs: Discover page, publicSongs reader, helpers
 │  │  ├─ pwa/                  ← install prompt, update toast, offline banner
+│  │  ├─ offline/              ← downloads: audio cache, downloads store, Downloads page, offline prompt
 │  │  ├─ settings/             ← account and storage, deleted files; admin duplicate check
 │  │  ├─ stats/                ← play counting and the Top songs page
 │  │  └─ search/
@@ -253,6 +255,5 @@ Security rules live in `firestore.rules`; publish them by pasting the file into 
 
 - Cloud Function for real Cloudinary deletion
 - Lyrics
-- Offline downloads of songs (cache audio in the service worker)
 - Native iOS/Android wrapper via Capacitor
 - Social features beyond public songs and public playlists (likes, comments, activity)

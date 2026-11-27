@@ -1,5 +1,6 @@
 import {
   CopyPlus,
+  Download,
   EllipsisVertical,
   FolderInput,
   Globe,
@@ -19,6 +20,7 @@ import { useAuth } from '@/features/auth/useAuth';
 import { useFolders } from '@/features/folders/useFolders';
 import { MoveToDialog } from '@/features/folders/MoveToDialog';
 import { usePlayableSongs } from '@/features/discover/usePublicSongs';
+import { useDownloadsStore } from '@/features/offline/downloadsStore';
 import { friendlyError } from '@/lib/errors';
 import type { Playlist } from '@/types/playlist';
 import {
@@ -128,6 +130,15 @@ export function PlaylistActionsMenu({
             label: 'Shuffle play',
             icon: <Shuffle />,
             onSelect: () => playPlaylist(playlist, songs(), { shuffle: true }),
+          },
+          {
+            label: 'Download',
+            icon: <Download />,
+            onSelect: () => {
+              const list = songs();
+              if (list.length === 0) toast.info('This playlist has no songs to download.');
+              else void useDownloadsStore.getState().download(list);
+            },
           },
           { label: 'Rename', icon: <Pencil />, onSelect: () => setDialog('rename') },
           { label: 'Move to…', icon: <FolderInput />, onSelect: () => setDialog('move') },

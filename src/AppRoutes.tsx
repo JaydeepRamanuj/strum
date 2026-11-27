@@ -22,6 +22,7 @@ const DiscoverPlaylistPage = named(
   () => import('@/features/discover/DiscoverPlaylistPage'),
   'DiscoverPlaylistPage',
 );
+const DownloadsPage = named(() => import('@/features/offline/DownloadsPage'), 'DownloadsPage');
 const FolderPage = named(() => import('@/features/folders/FolderPage'), 'FolderPage');
 const LibraryPage = named(() => import('@/features/library/LibraryPage'), 'LibraryPage');
 const NowPlayingPage = named(() => import('@/features/player/NowPlayingPage'), 'NowPlayingPage');
@@ -59,6 +60,7 @@ export function AppRoutes() {
           <Route path="discover/playlist/:id" element={<DiscoverPlaylistPage />} />
           <Route path="discover/artist/:key" element={<DiscoverArtistPage />} />
           <Route path="top" element={<TopSongsPage />} />
+          <Route path="downloads" element={<DownloadsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="playlist/:id" element={<PlaylistPage />} />
           <Route path="folder/:id" element={<FolderPage />} />

@@ -8,6 +8,7 @@ import { loadVolume, saveVolume, type QueueSnapshot } from './playerPersistence'
 import { initMediaSession, updateMediaSession } from './mediaSession';
 import { moveItem, nextIndex, prevTarget, shuffleAround } from './queueLogic';
 import { createPlayTracker } from '@/features/stats/playTracker';
+import { isDownloaded, offlineAudioUrl } from '@/features/offline/downloadsStore';
 
 /** Start prefetching the next song this many seconds before the current one ends. */
 const PRELOAD_BEFORE_END_SEC = 10;
@@ -67,6 +68,35 @@ const currentSong = (s: PlayerState = get()): Song | null => s.queue[s.index] ??
 
 let consecutiveFailures = 0;
 let prefetchedId: string | null = null;
+/** Object URL of the downloaded copy that is loaded now; revoked when another song loads. */
+let objectUrl: string | null = null;
+/** Bumped on every load, so a slow read of a downloaded copy can't load over a newer song. */
+let loadToken = 0;
+
+const OFFLINE_NO_DOWNLOADS =
+  "You're offline. Download songs while you're online to listen without a connection.";
+
+/** Next downloaded song in the queue after `from` (wrapping), or null. Used while offline. */
+function nextDownloadedIndex(from: number): number | null {
+  const { queue } = get();
+  for (let step = 1; step < queue.length; step++) {
+    const i = (from + step) % queue.length;
+    if (isDownloaded(queue[i].id)) return i;
+  }
+  return null;
+}
+
+function stopWithMessage(message: string): void {
+  consecutiveFailures = 0;
+  audioEngine.pause();
+  set({ isPlaying: false, isBuffering: false });
+  toast.error(message);
+}
+
+function swapObjectUrl(next: string | null): void {
+  if (objectUrl) URL.revokeObjectURL(objectUrl);
+  objectUrl = next;
+}
 
 // Top songs: tells the app when the current song has been listened to long enough to count.
 const playTracker = createPlayTracker();
@@ -78,8 +108,19 @@ export function setPlayCountedHandler(handler: ((song: Song) => void) | null): v
 }
 
 function loadCurrent(startAt: number, autoplay: boolean): void {
-  const song = currentSong();
+  let song = currentSong();
   if (!song) return;
+  if (!navigator.onLine && !isDownloaded(song.id)) {
+    // Offline: only downloaded songs can play, so move to the next one that is.
+    const alt = nextDownloadedIndex(get().index);
+    if (alt === null) {
+      if (autoplay) stopWithMessage(OFFLINE_NO_DOWNLOADS);
+      return;
+    }
+    set({ index: alt });
+    song = currentSong()!;
+    startAt = 0;
+  }
   playTracker.reset();
   set({
     positionSec: startAt,
@@ -88,8 +129,25 @@ function loadCurrent(startAt: number, autoplay: boolean): void {
     needsTap: false,
     isPlaying: autoplay,
   });
-  audioEngine.load(streamUrl(song.cloudinaryPublicId), startAt);
-  if (autoplay) audioEngine.play();
+  const token = ++loadToken;
+  const start = (url: string, ownUrl: string | null) => {
+    audioEngine.load(url, startAt);
+    swapObjectUrl(ownUrl);
+    if (autoplay) audioEngine.play();
+  };
+  if (!isDownloaded(song.id)) {
+    start(streamUrl(song.cloudinaryPublicId), null);
+    return;
+  }
+  // Downloaded: play the copy on this device (falls back to streaming if it has gone missing).
+  const publicId = song.cloudinaryPublicId;
+  void offlineAudioUrl(song.id).then((url) => {
+    if (token !== loadToken) {
+      if (url) URL.revokeObjectURL(url);
+      return;
+    }
+    start(url ?? streamUrl(publicId), url);
+  });
 }
 
 function goTo(index: number): void {
@@ -109,7 +167,7 @@ function maybePrefetch(remainingSec: number): void {
   const s = get();
   if (s.repeat === 'one') return;
   const upNext = s.queue[s.index + 1] ?? (s.repeat === 'all' ? s.queue[0] : undefined);
-  if (!upNext || upNext.id === prefetchedId) return;
+  if (!upNext || upNext.id === prefetchedId || isDownloaded(upNext.id)) return;
   prefetchedId = upNext.id;
   audioEngine.prefetch(streamUrl(upNext.cloudinaryPublicId));
 }
@@ -134,11 +192,16 @@ function handleEnded(): void {
 /** A song that can't be played is skipped; stops if every song in the queue fails in a row. */
 function failCurrent(): void {
   if (!navigator.onLine) {
-    // Skipping through the queue would only fail again: stop and say why.
-    consecutiveFailures = 0;
-    audioEngine.pause();
-    set({ isPlaying: false, isBuffering: false });
-    toast.error("You're offline. Connect to the internet to play songs.");
+    // Streaming can't work: move on to a downloaded song, or stop and say why.
+    consecutiveFailures++;
+    const alt = nextDownloadedIndex(get().index);
+    if (alt === null || consecutiveFailures >= get().queue.length) {
+      stopWithMessage(
+        alt === null ? OFFLINE_NO_DOWNLOADS : "You're offline and these songs can't play.",
+      );
+      return;
+    }
+    goTo(alt);
     return;
   }
   const song = currentSong();
@@ -227,7 +290,13 @@ export const usePlayerStore = create<PlayerState>(() => ({
   },
 
   play: () => {
-    if (!currentSong()) return;
+    const cur = currentSong();
+    if (!cur) return;
+    if (!navigator.onLine && !isDownloaded(cur.id)) {
+      // Nothing playable is loaded: jump to a downloaded song, or explain why not.
+      loadCurrent(0, true);
+      return;
+    }
     set({ isPlaying: true, needsTap: false });
     audioEngine.play();
   },

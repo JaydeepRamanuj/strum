@@ -1,4 +1,13 @@
-import { Compass, House, Library, Search, TrendingUp, Upload, type LucideIcon } from 'lucide-react';
+import {
+  Compass,
+  Download,
+  House,
+  Library,
+  Search,
+  TrendingUp,
+  Upload,
+  type LucideIcon,
+} from 'lucide-react';
 
 export interface NavItem {
   to: string;
@@ -16,4 +25,5 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/library', label: 'Library', icon: Library },
   { to: '/upload', label: 'Upload', icon: Upload },
   { to: '/top', label: 'Top songs', icon: TrendingUp, desktopOnly: true },
+  { to: '/downloads', label: 'Downloads', icon: Download, desktopOnly: true },
 ];

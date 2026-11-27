@@ -79,7 +79,7 @@ Update root `README.md` with: local setup, env vars, scripts, how to add friends
 | Feature | Notes |
 |---|---|
 | Real Cloudinary deletes | One callable Cloud Function holding the API secret; requires Blaze plan (still ~free at this scale) |
-| Offline song downloads | Cache selected songs' audio in IndexedDB / Cache Storage |
+| Offline song downloads | **Built** in Phase 9 — see `phase-9-offline-downloads.md` |
 | Native iOS app | Capacitor wrapper for reliable background audio |
 | Lyrics | Manual paste or `.lrc` upload, synced display |
 | Equaliser / crossfade | Web Audio API on top of the engine |

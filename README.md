@@ -62,9 +62,12 @@ ready. Reload"*. Nothing reloads by itself, so music doesn't cut out.
 - **Android / desktop Chrome or Edge:** profile menu → **Install app** (or the browser's install icon).
 - **iPhone / iPad (Safari):** Share → **Add to Home Screen**. Strum shows this hint once.
 
-Offline, the app opens and your library and playlists are visible (Firestore keeps a local copy). Songs
-need a connection to play and uploads are paused; audio is deliberately not cached. Cover art is cached for
-30 days.
+Offline, the app opens and your library and playlists are visible (Firestore keeps a local copy). Only
+**downloaded** songs play offline: use **Download** in a song's menu, a playlist's menu, or Library's select
+mode, and find them under **Downloads** (sidebar, or Home on a phone). When the connection drops, an
+**Offline** badge shows and Strum offers to play your downloads. Downloads live in the browser's storage on
+that device only (per account); streamed songs are still not cached. Uploads are paused offline. Cover art
+is cached for 30 days.
 
 ## Cleaning up deleted songs
 

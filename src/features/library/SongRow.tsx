@@ -1,6 +1,8 @@
 import clsx from 'clsx';
 import {
   Check,
+  CircleX,
+  Download,
   EllipsisVertical,
   Globe,
   ListEnd,
@@ -16,6 +18,8 @@ import type { CSSProperties, ReactNode, Ref } from 'react';
 import { Cover } from '@/components/Cover';
 import { IconButton } from '@/components/IconButton';
 import { Menu, type MenuItem } from '@/components/Menu';
+import { DownloadMark } from '@/features/offline/DownloadMark';
+import { useDownloadsStore } from '@/features/offline/downloadsStore';
 import { PlayingBars } from '@/features/player/PlayingBars';
 import { formatDuration } from '@/lib/formatters';
 import type { Song } from '@/types/song';
@@ -74,6 +78,8 @@ export function SongRow({
   const subtitle = [song.artist, song.album, byline].filter(Boolean).join(' · ');
   // The globe marks the user's own shared songs; Discover rows are all public, so it's skipped.
   const showPublicMark = song.isPublic && !song.owner;
+  const downloaded = useDownloadsStore((s) => Boolean(s.entries[song.id]));
+  const downloading = useDownloadsStore((s) => s.progress[song.id] !== undefined);
 
   const body = (
     <>
@@ -96,6 +102,7 @@ export function SongRow({
           {showPublicMark && (
             <Globe className="size-3.5 shrink-0 text-muted" aria-label="Public" role="img" />
           )}
+          <DownloadMark songId={song.id} />
         </p>
         <p className="truncate text-xs text-muted">{subtitle || '—'}</p>
       </div>
@@ -122,6 +129,18 @@ export function SongRow({
             : { label: 'Make public', icon: <Globe />, onSelect: onTogglePublic },
         ]
       : []),
+    downloaded
+      ? {
+          label: 'Remove download',
+          icon: <CircleX />,
+          onSelect: () => void useDownloadsStore.getState().remove([song.id]),
+        }
+      : {
+          label: downloading ? 'Downloading…' : 'Download',
+          icon: <Download />,
+          disabled: downloading,
+          onSelect: () => void useDownloadsStore.getState().download([song]),
+        },
     ...(onEdit ? [{ label: 'Edit info', icon: <Pencil />, onSelect: () => onEdit(song) }] : []),
     ...(onDelete
       ? [{ label: 'Delete', icon: <Trash2 />, danger: true, onSelect: () => onDelete(song) }]
